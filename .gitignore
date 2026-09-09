@@ -35,7 +35,6 @@ pnpm-debug.log*
 next-env.d.ts
 
 # runtime data (contains real PII + password hashes, never commit)
-/data/db/
 
 # uploaded club photos
 /public/uploads/

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "usr_admin",
+    "nombre": "Encargado de Pastoral",
+    "username": "pastoral",
+    "rol": "pastoral",
+    "passwordHash": "$2a$10$/UIjqFCDYtfn8CSKe5cG7es5MOnuS1Ufq30hunuem3M7Y6jMwBY0S"
+  },
+  {
+    "id": "usr_enc_musica",
+    "nombre": "Prof. Ana Ramírez",
+    "username": "profesor.musica",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_musica",
+    "passwordHash": "$2a$10$R9APj.nA1Yl2cAzotjfK8Od9yH4vbrcxkiGSmMv/WjKrazlRHjIIy"
+  },
+  {
+    "id": "usr_enc_debate",
+    "nombre": "Carlos Peña (11vo B)",
+    "username": "estudiante.debate",
+    "rol": "encargado_club",
+    "tipoPersona": "estudiante",
+    "passwordHash": "$2a$10$Fr2zuGqprQzzDYDQ/TJxQuvAvo84mGWStcZ8E256yT.oXdiQpkgZW"
+  },
+  {
+    "id": "usr_enc_arte",
+    "nombre": "Prof. Rosa Jiménez",
+    "username": "profesor.arte",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_arte",
+    "passwordHash": "$2a$10$3bIQVwBdzvJyD4wB84KBf.absGrg.7GmsGdXxjt566wazs2ySsFxG"
+  },
+  {
+    "id": "usr_enc_deporte",
+    "nombre": "Luis Mateo (12vo A)",
+    "username": "estudiante.deporte",
+    "rol": "encargado_club",
+    "tipoPersona": "estudiante",
+    "clubId": "club_deporte",
+    "passwordHash": "$2a$10$HPgVVfBDKNlPAUdvnBnA0Ov9l/xhi6HOn42z1aID0vdF47.2nGGoa"
+  },
+  {
+    "id": "usr_enc_robotica",
+    "nombre": "Prof. Kelvin Almonte",
+    "username": "profesor.robotica",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_robotica",
+    "passwordHash": "$2a$10$fLDr1xZbWR0T1SjARlnGNOnuozvtQWnmy7pknH8QZyqirz76.UR6K"
+  },
+  {
+    "id": "usr_mt3giajd49u0i5",
+    "nombre": "Jendry",
+    "username": "jendry",
+    "passwordHash": "$2a$10$hfsUTgkpRUyG9aLbN.i0RutV8LmHlgzhKaGzYhWfjQD1fNf3ReklG",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_debate"
+  }
+]
