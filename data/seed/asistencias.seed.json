@@ -1,0 +1,25 @@
+[
+  {
+    "id": "asis_001",
+    "clubId": "club_musica",
+    "fecha": "2026-08-19",
+    "registros": [
+      { "estudianteId": "2026-0001", "presente": true },
+      { "estudianteId": "2026-0002", "presente": true },
+      { "estudianteId": "2026-0011", "presente": false }
+    ],
+    "tomadaPorUsuarioId": "usr_enc_musica",
+    "anioEscolar": "2026"
+  },
+  {
+    "id": "asis_002",
+    "clubId": "club_debate",
+    "fecha": "2026-08-12",
+    "registros": [
+      { "estudianteId": "2026-0007", "presente": true },
+      { "estudianteId": "2026-0009", "presente": true }
+    ],
+    "tomadaPorUsuarioId": "usr_enc_debate",
+    "anioEscolar": "2026"
+  }
+]

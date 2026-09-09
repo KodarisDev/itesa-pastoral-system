@@ -1,0 +1,49 @@
+[
+  {
+    "id": "sol_001",
+    "fecha": "2026-08-18T14:32:00.000Z",
+    "nombre": "Camila",
+    "apellido": "Ortiz",
+    "curso": "10mo C",
+    "matricula": "2026-0008",
+    "estudianteId": "2026-0008",
+    "clubDeseadoId": "club_robotica",
+    "clubAlternativoId": "club_arte",
+    "estado": "pendiente"
+  },
+  {
+    "id": "sol_002",
+    "fecha": "2026-08-18T15:10:00.000Z",
+    "nombre": "Isabella",
+    "apellido": "Marte",
+    "curso": "11vo B",
+    "matricula": "2026-0010",
+    "estudianteId": "2026-0010",
+    "clubDeseadoId": "club_musica",
+    "clubAlternativoId": "club_debate",
+    "estado": "pendiente"
+  },
+  {
+    "id": "sol_003",
+    "fecha": "2026-08-19T09:05:00.000Z",
+    "nombre": "Daniela",
+    "apellido": "Vargas",
+    "curso": "8vo B",
+    "matricula": "2026-0014",
+    "estudianteId": "2026-0014",
+    "clubDeseadoId": "club_deporte",
+    "clubAlternativoId": "club_musica",
+    "estado": "pendiente"
+  },
+  {
+    "id": "sol_004",
+    "fecha": "2026-08-19T11:47:00.000Z",
+    "nombre": "Estudiante",
+    "apellido": "Nuevo",
+    "curso": "9no A",
+    "matricula": "2026-9999",
+    "clubDeseadoId": "club_arte",
+    "clubAlternativoId": "club_debate",
+    "estado": "pendiente"
+  }
+]

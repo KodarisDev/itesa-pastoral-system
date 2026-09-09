@@ -1,0 +1,54 @@
+[
+  {
+    "id": "usr_admin",
+    "nombre": "Encargado de Pastoral",
+    "username": "pastoral",
+    "passwordPlano": "pastoral123",
+    "rol": "pastoral"
+  },
+  {
+    "id": "usr_enc_musica",
+    "nombre": "Prof. Ana Ramírez",
+    "username": "profesor.musica",
+    "passwordPlano": "musica123",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_musica"
+  },
+  {
+    "id": "usr_enc_debate",
+    "nombre": "Carlos Peña (11vo B)",
+    "username": "estudiante.debate",
+    "passwordPlano": "debate123",
+    "rol": "encargado_club",
+    "tipoPersona": "estudiante",
+    "clubId": "club_debate"
+  },
+  {
+    "id": "usr_enc_arte",
+    "nombre": "Prof. Rosa Jiménez",
+    "username": "profesor.arte",
+    "passwordPlano": "arte123",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_arte"
+  },
+  {
+    "id": "usr_enc_deporte",
+    "nombre": "Luis Mateo (12vo A)",
+    "username": "estudiante.deporte",
+    "passwordPlano": "deporte123",
+    "rol": "encargado_club",
+    "tipoPersona": "estudiante",
+    "clubId": "club_deporte"
+  },
+  {
+    "id": "usr_enc_robotica",
+    "nombre": "Prof. Kelvin Almonte",
+    "username": "profesor.robotica",
+    "passwordPlano": "robotica123",
+    "rol": "encargado_club",
+    "tipoPersona": "profesor",
+    "clubId": "club_robotica"
+  }
+]

@@ -1,0 +1,16 @@
+[
+  { "id": "2026-0001", "nombre": "Juan", "apellido": "Pérez", "curso": "7mo A", "matricula": "2026-0001", "anioEscolar": "2026" },
+  { "id": "2026-0002", "nombre": "María", "apellido": "Gómez", "curso": "7mo A", "matricula": "2026-0002", "anioEscolar": "2026" },
+  { "id": "2026-0003", "nombre": "Pedro", "apellido": "Sánchez", "curso": "8vo B", "matricula": "2026-0003", "anioEscolar": "2026" },
+  { "id": "2026-0004", "nombre": "Lucía", "apellido": "Fernández", "curso": "8vo B", "matricula": "2026-0004", "anioEscolar": "2026" },
+  { "id": "2026-0005", "nombre": "Diego", "apellido": "Torres", "curso": "9no A", "matricula": "2026-0005", "anioEscolar": "2026" },
+  { "id": "2026-0006", "nombre": "Valeria", "apellido": "Castillo", "curso": "9no A", "matricula": "2026-0006", "anioEscolar": "2026" },
+  { "id": "2026-0007", "nombre": "Andrés", "apellido": "Rojas", "curso": "10mo C", "matricula": "2026-0007", "anioEscolar": "2026" },
+  { "id": "2026-0008", "nombre": "Camila", "apellido": "Ortiz", "curso": "10mo C", "matricula": "2026-0008", "anioEscolar": "2026" },
+  { "id": "2026-0009", "nombre": "Sebastián", "apellido": "Núñez", "curso": "11vo B", "matricula": "2026-0009", "anioEscolar": "2026" },
+  { "id": "2026-0010", "nombre": "Isabella", "apellido": "Marte", "curso": "11vo B", "matricula": "2026-0010", "anioEscolar": "2026" },
+  { "id": "2026-0011", "nombre": "Miguel Ángel", "apellido": "Cruz", "curso": "12vo A", "matricula": "2026-0011", "anioEscolar": "2026" },
+  { "id": "2026-0012", "nombre": "Fernanda", "apellido": "Reyes", "curso": "12vo A", "matricula": "2026-0012", "anioEscolar": "2026" },
+  { "id": "2026-0013", "nombre": "Ricardo", "apellido": "Paulino", "curso": "9no A", "matricula": "2026-0013", "anioEscolar": "2026" },
+  { "id": "2026-0014", "nombre": "Daniela", "apellido": "Vargas", "curso": "8vo B", "matricula": "2026-0014", "anioEscolar": "2026" }
+]

@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.08 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.08 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.08 0 0);
+  --primary: oklch(0.08 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.92 0 0);
+  --secondary-foreground: oklch(0.08 0 0);
+  --muted: oklch(0.92 0 0);
+  --muted-foreground: oklch(0.32 0 0);
+  --accent: oklch(0.9 0 0);
+  --accent-foreground: oklch(0.08 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.8 0 0);
+  --input: oklch(0.8 0 0);
+  --ring: oklch(0.42 0 0);
+
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --sidebar: oklch(0.955 0 0);
+  --sidebar-foreground: oklch(0.08 0 0);
+  --sidebar-primary: oklch(0.08 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.9 0 0);
+  --sidebar-accent-foreground: oklch(0.08 0 0);
+  --sidebar-border: oklch(0.8 0 0);
+  --sidebar-ring: oklch(0.42 0 0);
+
+  /* Semánticos propios del proyecto (no forman parte del set neutro de arriba) */
+  --success: 142 71% 32%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 42%;
+  --warning-foreground: 0 0% 100%;
+
+  /* Rojo institucional ITESA — única fuente de verdad de la marca */
+  --brand-accent: #c0392b;
+  --brand-accent-dark: #922b21;
+  --brand-accent-darker: #7f0000;
+
+  --toast-bg: #171717;
+  --toast-fg: #ffffff;
+}
+
+.dark {
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.99 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.995 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.995 0 0);
+  --primary: oklch(0.96 0 0);
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.19 0 0);
+  --secondary-foreground: oklch(0.99 0 0);
+  --muted: oklch(0.16 0 0);
+  --muted-foreground: oklch(0.86 0 0);
+  --accent: oklch(0.19 0 0);
+  --accent-foreground: oklch(0.995 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.08 0 0);
+  --border: oklch(1 0 0 / 22%);
+  --input: oklch(1 0 0 / 24%);
+  --ring: oklch(0.9 0 0);
+
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  --sidebar: oklch(0.11 0 0);
+  --sidebar-foreground: oklch(0.99 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.16 0 0);
+  --sidebar-accent-foreground: oklch(0.995 0 0);
+  --sidebar-border: oklch(1 0 0 / 18%);
+  --sidebar-ring: oklch(0.86 0 0);
+
+  --success: 142 60% 45%;
+  --success-foreground: 0 0% 8%;
+  --warning: 38 92% 55%;
+  --warning-foreground: 0 0% 8%;
+
+  --toast-bg: #f5f5f5;
+  --toast-fg: #171717;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+.dark html,
+html.dark {
+  color-scheme: dark;
+}
+
+html,
+body {
+  font-family: var(--font-body), "Poppins", sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-body), "Poppins", sans-serif;
+}
+
+::selection {
+  background-color: #c25d734f;
+}
+
+/* Evita el auto-zoom de iOS al enfocar inputs en mobile */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Cursor global: cualquier elemento interactivo obtiene pointer */
+button:not(:disabled),
+a[href],
+select,
+summary,
+label[for],
+input[type="button"],
+input[type="checkbox"],
+input[type="color"],
+input[type="file"],
+input[type="radio"],
+input[type="range"],
+input[type="reset"],
+input[type="submit"],
+[role="button"],
+[tabindex]:not([tabindex="-1"]) {
+  cursor: pointer;
+}
+button:disabled,
+input:disabled,
+select:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Autofill de Chrome forzado a la superficie del theme actual */
+input:-webkit-autofill {
+  box-shadow: 0 0 0 1000px #f3f4f6 inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+.dark input:-webkit-autofill {
+  box-shadow: 0 0 0 1000px #171717 inset !important;
+  -webkit-text-fill-color: #f5f5f5 !important;
+}
+
+/* Inputs "glass" sobre imágenes de fondo */
+.glass-input {
+  background-color: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(107, 107, 107, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #1a1a1a;
+  transition: all 0.2s ease;
+}
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Transición tipo "ripple" circular al alternar el tema (View Transitions API) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+:root.theme-transition-active::view-transition-old(root) {
+  animation: none;
+}
+:root.theme-transition-active::view-transition-new(root) {
+  clip-path: circle(0 at var(--theme-transition-x, 50%) var(--theme-transition-y, 50%));
+  animation-name: themeReveal;
+  animation-duration: 500ms;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+@keyframes themeReveal {
+  0% {
+    clip-path: circle(0 at var(--theme-transition-x, 50%) var(--theme-transition-y, 50%));
+  }
+  100% {
+    clip-path: circle(var(--theme-transition-radius, 150%) at var(--theme-transition-x, 50%) var(--theme-transition-y, 50%));
+  }
+}
+
+/* ===================================================================
+   Widget de accesibilidad — clases aplicadas sobre <html> por
+   lib/accessibility.ts. El contraste/saturación se resuelve en JS
+   (un solo `filter` combinado) para que los ajustes sean acumulables;
+   el resto vive aquí como reglas fijas.
+   =================================================================== */
+html.a11y-smart-contrast img,
+html.a11y-smart-contrast video {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.a11y-highlight-links a {
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 2px !important;
+  background-color: rgba(192, 57, 43, 0.14) !important;
+  border-radius: 3px;
+}
+
+html.a11y-text-spacing body,
+html.a11y-text-spacing p,
+html.a11y-text-spacing li,
+html.a11y-text-spacing a,
+html.a11y-text-spacing span,
+html.a11y-text-spacing button {
+  letter-spacing: 0.06em !important;
+  word-spacing: 0.12em !important;
+}
+
+html.a11y-line-height body,
+html.a11y-line-height p,
+html.a11y-line-height li {
+  line-height: 1.9 !important;
+}
+
+html.a11y-text-align-left p,
+html.a11y-text-align-left li,
+html.a11y-text-align-left blockquote {
+  text-align: left !important;
+}
+
+html.a11y-stop-animations *,
+html.a11y-stop-animations *::before,
+html.a11y-stop-animations *::after {
+  animation-play-state: paused !important;
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+html.a11y-hide-images img {
+  visibility: hidden !important;
+}
+
+html.a11y-dyslexia-font,
+html.a11y-dyslexia-font body,
+html.a11y-dyslexia-font p,
+html.a11y-dyslexia-font li,
+html.a11y-dyslexia-font span,
+html.a11y-dyslexia-font a,
+html.a11y-dyslexia-font button,
+html.a11y-dyslexia-font h1,
+html.a11y-dyslexia-font h2,
+html.a11y-dyslexia-font h3,
+html.a11y-dyslexia-font h4 {
+  font-family: Verdana, Tahoma, "Comic Sans MS", sans-serif !important;
+  letter-spacing: 0.02em !important;
+}
+
+html.a11y-large-targets a,
+html.a11y-large-targets button,
+html.a11y-large-targets input,
+html.a11y-large-targets select {
+  min-height: 44px !important;
+  padding-top: 0.65em !important;
+  padding-bottom: 0.65em !important;
+}
+
+html.a11y-big-cursor,
+html.a11y-big-cursor *,
+html.a11y-big-cursor button:not(:disabled),
+html.a11y-big-cursor a[href],
+html.a11y-big-cursor [role="button"] {
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><path d='M4 3 L4 33 L12 26 L17 36 L23 33 L18 24 L28 24 Z' fill='black' stroke='white' stroke-width='2.5' stroke-linejoin='round'/></svg>")
+      4 3,
+    auto !important;
+}
