@@ -19,6 +19,7 @@ export interface RegistroEnriquecido {
   curso: string;
   matricula: string;
   presente: boolean;
+  justificacion?: string;
 }
 
 export interface SesionEnriquecida {
@@ -107,6 +108,7 @@ export async function getSesionesEnriquecidas(filtro: FiltroAsistencia = {}): Pr
         curso: est?.curso ?? "—",
         matricula: est?.matricula ?? r.estudianteId,
         presente: r.presente,
+        justificacion: r.justificacion,
       };
     });
     return {

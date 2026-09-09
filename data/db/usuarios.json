@@ -13,7 +13,7 @@
     "rol": "encargado_club",
     "tipoPersona": "profesor",
     "clubId": "club_musica",
-    "passwordHash": "$2a$10$R9APj.nA1Yl2cAzotjfK8Od9yH4vbrcxkiGSmMv/WjKrazlRHjIIy"
+    "passwordHash": "$2a$10$5VzXbQrhK.REl1xAZayJLOWGPSwaSCgPLMLFwECE7M2MqZ6/PQaee"
   },
   {
     "id": "usr_enc_debate",
@@ -54,7 +54,7 @@
     "id": "usr_mt3giajd49u0i5",
     "nombre": "Jendry",
     "username": "jendry",
-    "passwordHash": "$2a$10$hfsUTgkpRUyG9aLbN.i0RutV8LmHlgzhKaGzYhWfjQD1fNf3ReklG",
+    "passwordHash": "$2a$10$Rw5vJOOTqpFRDq6o1MYnS.UPtYXq4IkzbhUC9MxAdB3.85u7fgc/C",
     "rol": "encargado_club",
     "tipoPersona": "profesor",
     "clubId": "club_debate"

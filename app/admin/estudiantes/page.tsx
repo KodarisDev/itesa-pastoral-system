@@ -35,6 +35,7 @@ export default async function AdminEstudiantesPage({ searchParams }: { searchPar
 
       <StudentsManager
         estudiantes={estudiantes}
+        clubes={clubes}
         clubPorEstudiante={clubPorEstudiante}
         historial={historial}
         initialMatricula={searchParams.matricula}

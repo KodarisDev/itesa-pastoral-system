@@ -11,14 +11,14 @@ export function CtaSection() {
           ¿Listo para encontrar tu club?
         </h2>
         <p className="mx-auto mt-3 max-w-md text-balance text-sm leading-relaxed text-white/80">
-          Completa el formulario de inscripción y forma parte de la comunidad de Pastoral.
+          Ingresa con tu cuenta para conocer tu club asignado y formar parte de la comunidad de Pastoral.
         </p>
         <div className="mt-8 flex justify-center">
           <Link
-            href="/inscripcion"
+            href="/login"
             className="rounded-full bg-white px-8 py-4 text-sm font-semibold text-brand transition-colors hover:bg-white/90"
           >
-            Inscribirme ahora
+            Descubre tu club
           </Link>
         </div>
       </FadeIn>

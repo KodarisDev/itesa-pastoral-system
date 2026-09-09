@@ -1,6 +1,7 @@
 export interface RegistroPresencia {
   estudianteId: string;
   presente: boolean;
+  justificacion?: string;
 }
 
 export interface SesionAsistencia {

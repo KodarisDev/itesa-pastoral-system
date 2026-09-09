@@ -5,7 +5,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { auth } from "@/lib/auth";
 import { clubSchema } from "@/lib/validations/club.schema";
-import { getClubById, getClubes, saveClub, deleteClub as dbDeleteClub } from "@/lib/db/clubes";
+import { getClubById, getClubes, saveClub, saveClubes, deleteClub as dbDeleteClub } from "@/lib/db/clubes";
 import { getUsuarioById, saveUsuario } from "@/lib/db/usuarios";
 import { appendHistorial } from "@/lib/db/historial";
 import { generarId } from "@/lib/utils";
@@ -220,9 +220,47 @@ export async function removeMiembroDeClub(clubId: string, estudianteId: string):
     });
     revalidatePath(`/admin/clubes/${clubId}`);
     revalidatePath("/admin/clubes");
+    revalidatePath("/admin/estudiantes");
+    revalidatePath("/admin");
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo quitar al estudiante del club.");
+  }
+}
+
+export async function cambiarClubEstudiante(estudianteId: string, clubDestinoId: string): Promise<ActionResult> {
+  try {
+    await requirePastoral();
+    const clubes = await getClubes();
+
+    const clubDestino = clubes.find((c) => c.id === clubDestinoId);
+    if (!clubDestino) return actionError("El club no existe.");
+    if (clubDestino.miembrosActuales.includes(estudianteId)) {
+      return actionError("El estudiante ya pertenece a ese club.");
+    }
+    if (clubDestino.capacidadMaxima - clubDestino.miembrosActuales.length <= 0) {
+      return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
+    }
+
+    const clubOrigen = clubes.find((c) => c.miembrosActuales.includes(estudianteId));
+
+    const next = clubes.map((c) => {
+      if (clubOrigen && c.id === clubOrigen.id) {
+        return { ...c, miembrosActuales: c.miembrosActuales.filter((id) => id !== estudianteId) };
+      }
+      if (c.id === clubDestino.id) {
+        return { ...c, miembrosActuales: [...c.miembrosActuales, estudianteId] };
+      }
+      return c;
+    });
+    await saveClubes(next);
+
+    revalidatePath("/admin/clubes");
+    revalidatePath("/admin/estudiantes");
+    revalidatePath("/admin");
+    return actionOk(undefined);
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo cambiar de club al estudiante.");
   }
 }
 

@@ -7,6 +7,7 @@ import { Loader2, Save } from "lucide-react";
 import { Switch } from "@/components/shared/Switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { submitAttendance } from "@/lib/actions/attendance.actions";
 import type { Estudiante, RegistroPresencia } from "@/types";
@@ -22,9 +23,12 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales }:
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const mapaInicial = new Map(registrosIniciales.map((r) => [r.estudianteId, r.presente]));
+  const mapaInicial = new Map(registrosIniciales.map((r) => [r.estudianteId, r]));
   const [presencia, setPresencia] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(miembros.map((m) => [m.id, mapaInicial.get(m.id) ?? true])),
+    Object.fromEntries(miembros.map((m) => [m.id, mapaInicial.get(m.id)?.presente ?? true])),
+  );
+  const [justificaciones, setJustificaciones] = useState<Record<string, string>>(() =>
+    Object.fromEntries(miembros.map((m) => [m.id, mapaInicial.get(m.id)?.justificacion ?? ""])),
   );
 
   function handleFechaChange(nuevaFecha: string) {
@@ -33,10 +37,11 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales }:
 
   function handleGuardar() {
     startTransition(async () => {
-      const registros: RegistroPresencia[] = miembros.map((m) => ({
-        estudianteId: m.id,
-        presente: presencia[m.id] ?? false,
-      }));
+      const registros: RegistroPresencia[] = miembros.map((m) => {
+        const presente = presencia[m.id] ?? false;
+        const justificacion = !presente ? justificaciones[m.id]?.trim() || undefined : undefined;
+        return { estudianteId: m.id, presente, justificacion };
+      });
       const res = await submitAttendance({ clubId, fecha, registros });
       if (!res.ok) {
         toast.error(res.error);
@@ -67,24 +72,41 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales }:
         </div>
       ) : (
         <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
-          {miembros.map((m) => (
-            <div key={m.id} className="flex items-center justify-between px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {m.nombre} {m.apellido}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {m.curso} · {m.matricula}
-                </p>
+          {miembros.map((m) => {
+            const presente = presencia[m.id] ?? false;
+            return (
+              <div key={m.id} className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {m.nombre} {m.apellido}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {m.curso} · {m.matricula}
+                    </p>
+                  </div>
+                  <Switch
+                    id={`presente-${m.id}`}
+                    checked={presente}
+                    onCheckedChange={(v) => setPresencia((prev) => ({ ...prev, [m.id]: v }))}
+                    label={presente ? "Presente" : "Ausente"}
+                  />
+                </div>
+                {!presente && (
+                  <div className="mt-2.5">
+                    <Textarea
+                      value={justificaciones[m.id] ?? ""}
+                      onChange={(e) => setJustificaciones((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                      placeholder="Justificación de la ausencia (opcional)"
+                      rows={2}
+                      maxLength={240}
+                      className="min-h-0 text-sm"
+                    />
+                  </div>
+                )}
               </div>
-              <Switch
-                id={`presente-${m.id}`}
-                checked={presencia[m.id] ?? false}
-                onCheckedChange={(v) => setPresencia((prev) => ({ ...prev, [m.id]: v }))}
-                label={presencia[m.id] ? "Presente" : "Ausente"}
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

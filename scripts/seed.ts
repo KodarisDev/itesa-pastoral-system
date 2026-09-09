@@ -8,7 +8,6 @@ const DB_DIR = path.join(process.cwd(), "data", "db");
 const ARCHIVOS_SIMPLES: Array<[seed: string, db: string]> = [
   ["estudiantes.seed.json", "estudiantes.json"],
   ["clubes.seed.json", "clubes.json"],
-  ["solicitudes.seed.json", "solicitudes.json"],
   ["asistencias.seed.json", "asistencias.json"],
   ["historial.seed.json", "historial.json"],
   ["meta.seed.json", "meta.json"],

@@ -54,17 +54,15 @@ export function ShareButtons({ titulo }: ShareButtonsProps) {
   ];
 
   return (
-    <div className="rounded-2xl border border-neutral-100 p-5 dark:border-neutral-800">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-400 dark:text-gray-500">
-        Compartir
-      </p>
+    <div className="rounded-2xl border border-neutral-100 p-5">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-400">Compartir</p>
       <ul className="space-y-1">
         {items.map((item) => (
           <li key={item.label}>
             <button
               type="button"
               onClick={item.action}
-              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-brand dark:text-gray-300 dark:hover:bg-neutral-800"
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-brand"
             >
               <item.icon className="h-4 w-4" aria-hidden="true" />
               {item.label}

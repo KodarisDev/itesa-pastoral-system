@@ -22,14 +22,14 @@ export function Gallery() {
   return (
     <section id="galeria" className="scroll-mt-20 mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:px-8">
       <FadeIn className="mx-auto mb-12 max-w-2xl text-center">
-        <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-4 py-1.5 text-[11px] font-medium uppercase tracking-widest text-neutral-500 dark:bg-neutral-800 dark:text-gray-400">
+        <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-4 py-1.5 text-[11px] font-medium uppercase tracking-widest text-neutral-500">
           <Images className="h-3.5 w-3.5" aria-hidden="true" />
           Galería
         </p>
-        <h2 className="text-balance text-[clamp(28px,4vw,40px)] font-semibold tracking-[-0.02em] text-neutral-950 dark:text-white">
+        <h2 className="text-balance text-[clamp(28px,4vw,40px)] font-semibold tracking-[-0.02em] text-neutral-950">
           Momentos de nuestros clubes
         </h2>
-        <p className="mt-3 text-balance text-sm leading-relaxed text-neutral-500 dark:text-gray-400">
+        <p className="mt-3 text-balance text-sm leading-relaxed text-neutral-500">
           Un vistazo a las actividades semanales de la comunidad de Pastoral. Espacio reservado para fotos reales de
           cada club.
         </p>

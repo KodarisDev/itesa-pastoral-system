@@ -80,13 +80,14 @@
     "anioEscolar": "2026"
   },
   {
-    "id": "asis_mtu2qaooclmwxg",
+    "id": "asis_mtuoeaah2q81fa",
     "clubId": "club_debate",
     "fecha": "2026-09-09",
     "registros": [
       {
         "estudianteId": "2026-0007",
-        "presente": true
+        "presente": false,
+        "justificacion": "jjn"
       },
       {
         "estudianteId": "2026-0009",

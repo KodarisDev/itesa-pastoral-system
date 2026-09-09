@@ -10,6 +10,7 @@ export const asistenciaSchema = z.object({
       z.object({
         estudianteId: z.string().min(1),
         presente: z.boolean(),
+        justificacion: z.string().trim().max(240, "La justificación no puede pasar de 240 caracteres.").optional(),
       }),
     )
     .min(1, "El club no tiene miembros para pasar lista."),

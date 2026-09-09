@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn, getSession } from "next-auth/react";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/login.schema";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -82,17 +83,28 @@ export function LoginForm() {
         <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-neutral-800 dark:text-gray-200">
           Contraseña
         </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          className={cn(
-            "h-11 w-full rounded-xl border bg-white px-4 text-[16px] text-gray-700 transition-colors focus:outline-none dark:bg-neutral-900 dark:text-gray-200 md:text-sm",
-            errors.password ? "border-destructive" : "border-neutral-200 focus:border-brand dark:border-neutral-700 dark:focus:border-red-600",
-          )}
-          placeholder="••••••••"
-          {...register("password")}
-        />
+        <div className="relative">
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            className={cn(
+              "h-11 w-full rounded-xl border bg-white px-4 pr-11 text-[16px] text-gray-700 transition-colors focus:outline-none dark:bg-neutral-900 dark:text-gray-200 md:text-sm",
+              errors.password ? "border-destructive" : "border-neutral-200 focus:border-brand dark:border-neutral-700 dark:focus:border-red-600",
+            )}
+            placeholder="••••••••"
+            {...register("password")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </div>
         {errors.password && (
           <p role="alert" className="mt-1.5 text-sm text-destructive">
             {errors.password.message}

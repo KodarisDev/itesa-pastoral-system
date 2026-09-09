@@ -20,6 +20,7 @@ const DETAIL_COLUMNS = [
   { header: "Curso", key: "curso", width: 12 },
   { header: "Matrícula", key: "matricula", width: 14 },
   { header: "Estado", key: "estado", width: 12 },
+  { header: "Justificación", key: "justificacion", width: 28 },
   { header: "Tomada por", key: "tomadaPor", width: 22 },
 ];
 
@@ -195,7 +196,8 @@ export async function generarExcelAsistencia(
         };
         row.getCell(7).font = { color: { argb: registro.presente ? PRESENTE_TEXT : AUSENTE_TEXT }, bold: true };
         row.getCell(7).alignment = { horizontal: "center" };
-        row.getCell(8).value = sesion.tomadaPorNombre;
+        row.getCell(8).value = registro.presente ? "" : registro.justificacion ?? "";
+        row.getCell(9).value = sesion.tomadaPorNombre;
 
         if (fila % 2 === 0) {
           for (let col = 1; col <= DETAIL_COLUMNS.length; col += 1) {

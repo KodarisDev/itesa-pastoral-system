@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { usuarioEncargadoSchema } from "@/lib/validations/usuario.schema";
+import { usuarioEncargadoSchema, usuarioEncargadoUpdateSchema } from "@/lib/validations/usuario.schema";
 import {
   getUsuarioByUsername,
   getUsuarioById,
@@ -70,6 +70,66 @@ export async function createUsuarioEncargado(formData: FormData): Promise<
     return actionOk({ username: parsed.data.username, password });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el usuario.");
+  }
+}
+
+export async function updateUsuarioEncargado(usuarioId: string, formData: FormData): Promise<ActionResult> {
+  try {
+    await requirePastoral();
+
+    const usuario = await getUsuarioById(usuarioId);
+    if (!usuario) return actionError("El usuario no existe.");
+
+    const parsed = usuarioEncargadoUpdateSchema.safeParse({
+      nombre: formData.get("nombre"),
+      username: formData.get("username"),
+      tipoPersona: formData.get("tipoPersona"),
+      clubId: formData.get("clubId"),
+      password: formData.get("password") ?? "",
+    });
+    if (!parsed.success) {
+      return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
+    }
+
+    const existente = await getUsuarioByUsername(parsed.data.username);
+    if (existente && existente.id !== usuarioId) {
+      return actionError("Ese nombre de usuario ya está en uso, elige otro.");
+    }
+
+    const clubNuevo = await getClubById(parsed.data.clubId);
+    if (!clubNuevo) return actionError("El club seleccionado no existe.");
+
+    const clubAnteriorId = usuario.clubId;
+
+    await saveUsuario({
+      ...usuario,
+      nombre: parsed.data.nombre,
+      username: parsed.data.username,
+      tipoPersona: parsed.data.tipoPersona,
+      clubId: parsed.data.clubId,
+      passwordHash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.passwordHash,
+    });
+
+    if (clubAnteriorId && clubAnteriorId !== parsed.data.clubId) {
+      const clubAnterior = await getClubById(clubAnteriorId);
+      if (clubAnterior && clubAnterior.encargadoUsuarioId === usuarioId) {
+        await saveClub({ ...clubAnterior, encargadoUsuarioId: null });
+      }
+    }
+
+    if (clubNuevo.encargadoUsuarioId && clubNuevo.encargadoUsuarioId !== usuarioId) {
+      const encargadoAnteriorDelClub = await getUsuarioById(clubNuevo.encargadoUsuarioId);
+      if (encargadoAnteriorDelClub) await saveUsuario({ ...encargadoAnteriorDelClub, clubId: undefined });
+    }
+    if (clubNuevo.encargadoUsuarioId !== usuarioId) {
+      await saveClub({ ...clubNuevo, encargadoUsuarioId: usuarioId });
+    }
+
+    revalidatePath("/admin/usuarios");
+    revalidatePath("/admin/clubes");
+    return actionOk(undefined);
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo actualizar el usuario.");
   }
 }
 

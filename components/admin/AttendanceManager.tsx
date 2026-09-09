@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarCheck, ClipboardList, Percent, Shapes } from "lucide-react";
+import { CalendarCheck, ClipboardList, Percent, Search, Shapes } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -22,20 +22,27 @@ interface AttendanceManagerProps {
 export function AttendanceManager({ sesiones, clubes, ciclos, anios }: AttendanceManagerProps) {
   const [clubId, setClubId] = useState("todos");
   const [ciclo, setCiclo] = useState("todos");
-  const [anio, setAnio] = useState("todos");
+  const [estudianteQuery, setEstudianteQuery] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
 
   const filtradas = useMemo(() => {
-    return sesiones.filter((s) => {
-      if (clubId !== "todos" && s.clubId !== clubId) return false;
-      if (ciclo !== "todos" && String(s.cicloNumero) !== ciclo) return false;
-      if (anio !== "todos" && s.anioEscolar !== anio) return false;
-      if (desde && s.fecha < desde) return false;
-      if (hasta && s.fecha > hasta) return false;
-      return true;
-    });
-  }, [sesiones, clubId, ciclo, anio, desde, hasta]);
+    const q = estudianteQuery.trim().toLowerCase();
+    return sesiones
+      .filter((s) => {
+        if (clubId !== "todos" && s.clubId !== clubId) return false;
+        if (ciclo !== "todos" && String(s.cicloNumero) !== ciclo) return false;
+        if (desde && s.fecha < desde) return false;
+        if (hasta && s.fecha > hasta) return false;
+        if (q && !s.registros.some((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q))) return false;
+        return true;
+      })
+      .map((s) => {
+        if (!q) return s;
+        const registros = s.registros.filter((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q));
+        return { ...s, registros, presentes: registros.filter((r) => r.presente).length, total: registros.length };
+      });
+  }, [sesiones, clubId, ciclo, estudianteQuery, desde, hasta]);
 
   const totalPresentes = filtradas.reduce((acc, s) => acc + s.presentes, 0);
   const totalRegistros = filtradas.reduce((acc, s) => acc + s.total, 0);
@@ -99,22 +106,19 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
           </Select>
         </div>
         <div>
-          <Label htmlFor="filtro-anio" className="text-xs">
-            Año escolar
+          <Label htmlFor="filtro-estudiante" className="text-xs">
+            Buscar estudiante
           </Label>
-          <Select value={anio} onValueChange={setAnio}>
-            <SelectTrigger id="filtro-anio">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              {anios.map((a) => (
-                <SelectItem key={a} value={a}>
-                  {a}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+            <Input
+              id="filtro-estudiante"
+              value={estudianteQuery}
+              onChange={(e) => setEstudianteQuery(e.target.value)}
+              placeholder="Nombre o matrícula"
+              className="pl-9"
+            />
+          </div>
         </div>
         <div>
           <Label htmlFor="filtro-desde" className="text-xs">
@@ -159,12 +163,17 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
                   <span>{sesion.anioEscolar}</span>
                 </div>
                 {sesion.registros.map((r) => (
-                  <div key={r.estudianteId} className="flex items-center justify-between py-2 text-sm">
-                    <div>
-                      <span className="text-gray-700 dark:text-gray-300">{r.nombreCompleto}</span>
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{r.curso}</span>
+                  <div key={r.estudianteId} className="py-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div>
+                        <span className="text-gray-700 dark:text-gray-300">{r.nombreCompleto}</span>
+                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{r.curso}</span>
+                      </div>
+                      <Badge variant={r.presente ? "success" : "destructive"}>{r.presente ? "Presente" : "Ausente"}</Badge>
                     </div>
-                    <Badge variant={r.presente ? "success" : "destructive"}>{r.presente ? "Presente" : "Ausente"}</Badge>
+                    {!r.presente && r.justificacion && (
+                      <p className="mt-1 text-xs italic text-gray-500 dark:text-gray-400">&ldquo;{r.justificacion}&rdquo;</p>
+                    )}
                   </div>
                 ))}
               </div>

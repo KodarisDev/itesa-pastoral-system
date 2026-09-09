@@ -143,7 +143,7 @@ export function ExportAsistenciaModal({ scope, clubes = [], ciclos, anios }: Exp
               <Input type="date" className="mt-2" value={fecha} onChange={(e) => setFecha(e.target.value)} />
             )}
             {modoFecha === "rango" && (
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="export-desde" className="text-xs font-normal text-gray-500">
                     Desde
@@ -160,7 +160,7 @@ export function ExportAsistenciaModal({ scope, clubes = [], ciclos, anios }: Exp
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="export-ciclo">Ciclo</Label>
               <Select value={ciclo} onValueChange={setCiclo}>

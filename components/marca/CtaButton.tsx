@@ -22,7 +22,7 @@ export function CtaButton({ href, children, variant = "dark", className, ...prop
       <span
         className={cn(
           "relative z-10 rounded-xl px-5 py-3 text-sm font-medium text-white",
-          variant === "dark" && "bg-neutral-950 dark:bg-white dark:text-neutral-900",
+          variant === "dark" && "bg-neutral-950",
         )}
         style={variant === "brand" ? { background: BRAND_GRADIENT } : undefined}
       >

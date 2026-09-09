@@ -31,7 +31,7 @@ export const NOTICIAS: Noticia[] = [
       "Este año se mantienen los cinco clubes ya conocidos por la comunidad —Coro y Música, Debate y Oratoria, Arte y Pintura, Voleibol y Robótica— cada uno con cupos limitados y un ciclo de trabajo definido para el año escolar.",
     ],
     icono: Megaphone,
-    cta: { label: "Inscribirme ahora", href: "/inscripcion" },
+    cta: { label: "Ver los clubes disponibles", href: "/clubes" },
   },
   {
     slug: "bienvenida-encargados-2026",

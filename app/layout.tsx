@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
-import { AccessibilityWidget } from "@/components/shared/AccessibilityWidget";
 import "./globals.css";
 
 const bodyFont = Poppins({
@@ -15,6 +14,12 @@ const bodyFont = Poppins({
 export const metadata: Metadata = {
   title: "ITESA Pastoral — Sistema de Clubes",
   description: "Gestión de clubes, inscripciones y asistencia del área de pastoral de ITESA.",
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -33,7 +38,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background font-sans text-foreground antialiased transition-colors duration-300">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {children}
-        <AccessibilityWidget />
         <Toaster
           position="top-center"
           toastOptions={{

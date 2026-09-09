@@ -1,21 +1,40 @@
-import { Users, Inbox, Shapes, AlertTriangle } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Users, ClipboardCheck, Shapes, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/admin/StatCard";
 import { OccupancyChart } from "@/components/admin/OccupancyChart";
-import { RequestsStatusChart } from "@/components/admin/RequestsStatusChart";
 import { getClubes } from "@/lib/db/clubes";
 import { getEstudiantes } from "@/lib/db/estudiantes";
-import { getSolicitudes } from "@/lib/db/solicitudes";
+import { getSesionesEnriquecidas } from "@/lib/reportes/asistencia";
 
 export const dynamic = "force-dynamic";
 
+function fechaUltimoMiercoles(): string {
+  const hoy = new Date();
+  const diff = (hoy.getDay() - 3 + 7) % 7;
+  const miercoles = new Date(hoy);
+  miercoles.setDate(hoy.getDate() - diff);
+  return miercoles.toISOString().slice(0, 10);
+}
+
 export default async function AdminDashboardPage() {
-  const [clubes, estudiantes, solicitudes] = await Promise.all([getClubes(), getEstudiantes(), getSolicitudes()]);
+  const [clubes, estudiantes, sesiones] = await Promise.all([
+    getClubes(),
+    getEstudiantes(),
+    getSesionesEnriquecidas(),
+  ]);
 
   const idsConClub = new Set(clubes.flatMap((c) => c.miembrosActuales));
   const sinClub = estudiantes.filter((e) => !idsConClub.has(e.id)).length;
-  const pendientes = solicitudes.filter((s) => s.estado === "pendiente").length;
   const clubesLlenos = clubes.filter((c) => c.miembrosActuales.length >= c.capacidadMaxima).length;
+
+  const fechaMiercoles = fechaUltimoMiercoles();
+  const sesionesMiercoles = sesiones.filter((s) => s.fecha === fechaMiercoles);
+  const presentesMiercoles = sesionesMiercoles.reduce((acc, s) => acc + s.presentes, 0);
+  const totalMiercoles = sesionesMiercoles.reduce((acc, s) => acc + s.total, 0);
+  const fechaMiercolesLabel = format(new Date(`${fechaMiercoles}T00:00:00`), "d 'de' MMMM", { locale: es });
 
   return (
     <div className="space-y-8">
@@ -27,7 +46,12 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Estudiantes en el listado" value={estudiantes.length} icon={Users} accent="neutral" />
         <StatCard label="Sin club asignado" value={sinClub} icon={AlertTriangle} accent={sinClub > 0 ? "warning" : "success"} />
-        <StatCard label="Solicitudes pendientes" value={pendientes} icon={Inbox} accent={pendientes > 0 ? "brand" : "success"} />
+        <StatCard
+          label={`Asistencia del miércoles ${fechaMiercolesLabel}`}
+          value={totalMiercoles > 0 ? `${presentesMiercoles}/${totalMiercoles}` : "Sin registro"}
+          icon={ClipboardCheck}
+          accent={totalMiercoles === 0 ? "neutral" : presentesMiercoles === totalMiercoles ? "success" : "brand"}
+        />
         <StatCard label="Clubes con cupo lleno" value={clubesLlenos} icon={Shapes} accent="neutral" />
       </div>
 
@@ -40,12 +64,34 @@ export default async function AdminDashboardPage() {
             <OccupancyChart clubes={clubes} />
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Estado de solicitudes</CardTitle>
+            <CardTitle className="text-base">Asistencia del miércoles {fechaMiercolesLabel} por club</CardTitle>
           </CardHeader>
           <CardContent>
-            <RequestsStatusChart solicitudes={solicitudes} />
+            {sesionesMiercoles.length === 0 ? (
+              <p className="flex h-72 items-center justify-center text-center text-sm text-gray-400 dark:text-gray-500">
+                Ningún club ha pasado lista este miércoles todavía.
+              </p>
+            ) : (
+              <div className="max-h-72 space-y-2 overflow-y-auto">
+                {sesionesMiercoles
+                  .slice()
+                  .sort((a, b) => a.clubNombre.localeCompare(b.clubNombre))
+                  .map((s) => (
+                    <div
+                      key={s.sesionId}
+                      className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2.5 dark:border-neutral-800"
+                    >
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{s.clubNombre}</span>
+                      <Badge variant={s.presentes === s.total ? "success" : "secondary"}>
+                        {s.presentes} / {s.total} presentes
+                      </Badge>
+                    </div>
+                  ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

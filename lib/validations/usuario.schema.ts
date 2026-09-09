@@ -20,3 +20,15 @@ export const usuarioEncargadoSchema = z.object({
 });
 
 export type UsuarioEncargadoFormValues = z.infer<typeof usuarioEncargadoSchema>;
+
+export const usuarioEncargadoUpdateSchema = usuarioEncargadoSchema.extend({
+  password: z
+    .string()
+    .trim()
+    .min(6, "La contraseña debe tener al menos 6 caracteres.")
+    .max(72, "La contraseña es demasiado larga.")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type UsuarioEncargadoUpdateFormValues = z.infer<typeof usuarioEncargadoUpdateSchema>;
