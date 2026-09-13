@@ -7,6 +7,7 @@ import type { NextAuthConfig } from "next-auth";
  * para usarse en Server Actions y en el route handler (ambos corren en Node, no en Edge).
  */
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [],
