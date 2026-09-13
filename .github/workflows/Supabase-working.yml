@@ -1,0 +1,12 @@
+name: supabase-working
+on:
+  schedule:
+    - cron: '0 12 * * *'   # todos los días a las 12:00 UTC
+  workflow_dispatch:        # te permite correrlo manualmente también
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hacer petición al proyecto
+        run: curl -f "Endpoint de supabase"
