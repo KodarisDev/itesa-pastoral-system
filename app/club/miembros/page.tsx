@@ -2,18 +2,17 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { MembersList } from "@/components/club/MembersList";
 import { getClubById } from "@/lib/db/clubes";
-import { getEstudiantesByIds } from "@/lib/db/estudiantes";
+import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClubMiembrosPage() {
   const session = await auth();
-  if (!session?.user.clubId) redirect("/login");
+  const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
+  if (!idClub) redirect("/login");
 
-  const club = await getClubById(session.user.clubId);
+  const [club, miembros] = await Promise.all([getClubById(idClub), getEstudiantesPorClub(idClub)]);
   if (!club) redirect("/login");
-
-  const miembros = await getEstudiantesByIds(club.miembrosActuales);
 
   return (
     <div className="space-y-6">

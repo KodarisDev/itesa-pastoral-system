@@ -3,6 +3,7 @@ import { Navbar } from "@/components/marca/Navbar";
 import { Footer } from "@/components/marca/Footer";
 import { ClubCard } from "@/components/marca/ClubCard";
 import { getClubes } from "@/lib/db/clubes";
+import { getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ClubesPage() {
-  const clubes = await getClubes();
+  const [clubes, miembrosPorClub] = await Promise.all([getClubes(), getConteoMiembrosPorClub()]);
 
   return (
     <main id="contenido" className="bg-white text-neutral-950">
@@ -35,7 +36,7 @@ export default async function ClubesPage() {
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {clubes.map((club) => (
-              <ClubCard key={club.id} club={club} />
+              <ClubCard key={club.id_club} club={club} miembrosActuales={miembrosPorClub.get(club.id_club) ?? 0} />
             ))}
           </div>
         )}

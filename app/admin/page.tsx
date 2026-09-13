@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/admin/StatCard";
 import { OccupancyChart } from "@/components/admin/OccupancyChart";
 import { getClubes } from "@/lib/db/clubes";
-import { getEstudiantes } from "@/lib/db/estudiantes";
+import { getEstudiantes, getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
 import { getSesionesEnriquecidas } from "@/lib/reportes/asistencia";
 
 export const dynamic = "force-dynamic";
@@ -20,15 +20,15 @@ function fechaUltimoMiercoles(): string {
 }
 
 export default async function AdminDashboardPage() {
-  const [clubes, estudiantes, sesiones] = await Promise.all([
+  const [clubes, estudiantes, sesiones, miembrosPorClub] = await Promise.all([
     getClubes(),
     getEstudiantes(),
     getSesionesEnriquecidas(),
+    getConteoMiembrosPorClub(),
   ]);
 
-  const idsConClub = new Set(clubes.flatMap((c) => c.miembrosActuales));
-  const sinClub = estudiantes.filter((e) => !idsConClub.has(e.id)).length;
-  const clubesLlenos = clubes.filter((c) => c.miembrosActuales.length >= c.capacidadMaxima).length;
+  const sinClub = estudiantes.filter((e) => e.id_club == null).length;
+  const clubesLlenos = clubes.filter((c) => c.capacidad != null && (miembrosPorClub.get(c.id_club) ?? 0) >= c.capacidad).length;
 
   const fechaMiercoles = fechaUltimoMiercoles();
   const sesionesMiercoles = sesiones.filter((s) => s.fecha === fechaMiercoles);
@@ -61,7 +61,7 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-base">Ocupación por club</CardTitle>
           </CardHeader>
           <CardContent>
-            <OccupancyChart clubes={clubes} />
+            <OccupancyChart clubes={clubes} miembrosPorClub={miembrosPorClub} />
           </CardContent>
         </Card>
 

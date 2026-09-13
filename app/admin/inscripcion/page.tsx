@@ -1,16 +1,18 @@
 import { InscripcionManager } from "@/components/admin/InscripcionManager";
-import { getEstudiantes } from "@/lib/db/estudiantes";
+import { getEstudiantes, getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
 import { getClubes } from "@/lib/db/clubes";
+import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminInscripcionPage() {
-  const [estudiantes, clubes] = await Promise.all([getEstudiantes(), getClubes()]);
+  await requireVista("estudiantes:inscribir");
 
-  const clubPorEstudiante = new Map<string, string>();
-  for (const club of clubes) {
-    for (const id of club.miembrosActuales) clubPorEstudiante.set(id, club.nombre);
-  }
+  const [estudiantes, clubes, miembrosPorClub] = await Promise.all([
+    getEstudiantes(),
+    getClubes(),
+    getConteoMiembrosPorClub(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -21,7 +23,7 @@ export default async function AdminInscripcionPage() {
         </p>
       </div>
 
-      <InscripcionManager estudiantes={estudiantes} clubes={clubes} clubPorEstudiante={clubPorEstudiante} />
+      <InscripcionManager estudiantes={estudiantes} clubes={clubes} miembrosPorClub={miembrosPorClub} />
     </div>
   );
 }

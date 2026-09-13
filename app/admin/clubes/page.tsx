@@ -2,15 +2,26 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClubsManager } from "@/components/admin/ClubsManager";
 import { ClubFormDialog } from "@/components/admin/ClubFormDialog";
-import { getClubes } from "@/lib/db/clubes";
+import { getClubes, getEncargados } from "@/lib/db/clubes";
 import { getUsuarios } from "@/lib/db/usuarios";
 import { getEstudiantes } from "@/lib/db/estudiantes";
+import { getRoles } from "@/lib/db/roles";
+import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminClubesPage() {
-  const [clubes, usuarios, estudiantes] = await Promise.all([getClubes(), getUsuarios(), getEstudiantes()]);
-  const encargados = usuarios.filter((u) => u.rol === "encargado_club");
+  await requireVista("clubes:ver");
+
+  const [clubes, usuarios, estudiantes, encargados, roles] = await Promise.all([
+    getClubes(),
+    getUsuarios(),
+    getEstudiantes(),
+    getEncargados(),
+    getRoles(),
+  ]);
+  const idRolEncargado = roles.find((r) => r.nombre === "encargado_club")?.id_rol;
+  const usuariosEncargados = usuarios.filter((u) => u.id_rol === idRolEncargado);
 
   return (
     <div className="space-y-6">
@@ -21,7 +32,7 @@ export default async function AdminClubesPage() {
         </div>
         <ClubFormDialog
           mode="crear"
-          encargados={encargados}
+          encargados={usuariosEncargados}
           trigger={
             <Button>
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -31,7 +42,7 @@ export default async function AdminClubesPage() {
         />
       </div>
 
-      <ClubsManager clubes={clubes} encargados={encargados} estudiantes={estudiantes} />
+      <ClubsManager clubes={clubes} usuarios={usuariosEncargados} encargados={encargados} estudiantes={estudiantes} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, MoreVertical, Repeat, UserMinus } from "lucide-react";
@@ -36,16 +36,13 @@ import type { Club, Estudiante } from "@/types";
 
 interface StudentRowActionsMenuProps {
   estudiante: Estudiante;
-  clubActualId: string | null;
+  clubActualId: number | null;
   clubActualNombre: string | null;
   clubes: Club[];
+  miembrosPorClub?: Map<number, number>;
 }
 
-function cupoDisponible(club: Club) {
-  return club.capacidadMaxima - club.miembrosActuales.length;
-}
-
-export function StudentRowActionsMenu({ estudiante, clubActualId, clubActualNombre, clubes }: StudentRowActionsMenuProps) {
+export function StudentRowActionsMenu({ estudiante, clubActualId, clubActualNombre, clubes, miembrosPorClub }: StudentRowActionsMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [cambiarOpen, setCambiarOpen] = useState(false);
@@ -53,10 +50,15 @@ export function StudentRowActionsMenu({ estudiante, clubActualId, clubActualNomb
   const [clubDestinoId, setClubDestinoId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const cupoDisponible = useMemo(
+    () => (club: Club) => (club.capacidad ?? Infinity) - (miembrosPorClub?.get(club.id_club) ?? 0),
+    [miembrosPorClub],
+  );
+
   function handleCambiar() {
     if (!clubDestinoId) return;
     startTransition(async () => {
-      const res = await cambiarClubEstudiante(estudiante.id, clubDestinoId);
+      const res = await cambiarClubEstudiante(estudiante.id_estudiante, Number(clubDestinoId));
       if (!res.ok) {
         setError(res.error);
         return;
@@ -72,7 +74,7 @@ export function StudentRowActionsMenu({ estudiante, clubActualId, clubActualNomb
   function handleSacar() {
     if (!clubActualId) return;
     startTransition(async () => {
-      const res = await removeMiembroDeClub(clubActualId, estudiante.id);
+      const res = await removeMiembroDeClub(clubActualId, estudiante.id_estudiante);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -141,9 +143,9 @@ export function StudentRowActionsMenu({ estudiante, clubActualId, clubActualNomb
                 </SelectTrigger>
                 <SelectContent>
                   {clubes
-                    .filter((c) => c.id !== clubActualId)
+                    .filter((c) => c.id_club !== clubActualId)
                     .map((c) => (
-                      <SelectItem key={c.id} value={c.id} disabled={cupoDisponible(c) <= 0}>
+                      <SelectItem key={c.id_club} value={String(c.id_club)} disabled={cupoDisponible(c) <= 0}>
                         {c.nombre} ({cupoDisponible(c) > 0 ? `${cupoDisponible(c)} cupos` : "sin cupo"})
                       </SelectItem>
                     ))}

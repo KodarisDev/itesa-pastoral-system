@@ -15,7 +15,7 @@ const NAV_ITEMS: DashboardNavItem[] = [
 
 export default async function ClubLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session || session.user.rol !== "encargado_club") {
+  if (!session || session.user.rolNombre !== "encargado_club") {
     redirect("/login");
   }
 

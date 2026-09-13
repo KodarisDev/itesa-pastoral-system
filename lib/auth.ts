@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { getUsuarioByUsername } from "@/lib/db/usuarios";
+import { getUsuarioByUsername, compararPassword } from "@/lib/db/usuarios";
+import { getRolById } from "@/lib/db/roles";
+import { resolverSesion } from "@/lib/auth/permisos";
 import { authConfig } from "@/lib/auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -20,17 +21,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const usuario = await getUsuarioByUsername(username);
-        if (!usuario) return null;
+        if (!usuario || !usuario.activo) return null;
 
-        const valido = bcrypt.compareSync(password, usuario.passwordHash);
+        const valido = compararPassword(password, usuario.password_hash);
         if (!valido) return null;
 
+        const [rol, sesion] = await Promise.all([getRolById(usuario.id_rol), resolverSesion(usuario)]);
+
         return {
-          id: usuario.id,
+          id: String(usuario.id_usuario),
           name: usuario.nombre,
-          rol: usuario.rol,
-          clubId: usuario.clubId,
-          tipoPersona: usuario.tipoPersona,
+          rolId: usuario.id_rol,
+          rolNombre: rol?.nombre ?? "",
+          permisos: sesion.permisos,
+          clubIds: sesion.clubIds,
+          clubPrincipalId: sesion.clubPrincipalId,
+          idEstudiante: usuario.id_estudiante,
         };
       },
     }),

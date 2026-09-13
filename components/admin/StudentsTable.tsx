@@ -13,51 +13,43 @@ import type { Club, Estudiante } from "@/types";
 interface StudentsTableProps {
   estudiantes: Estudiante[];
   clubes: Club[];
-  clubPorEstudiante: Map<string, string>;
   onSelect: (estudiante: Estudiante) => void;
 }
 
 const SIN_CLUB = "__sin_club__";
 const CON_CLUB = "__con_club__";
 
-export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect }: StudentsTableProps) {
+export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTableProps) {
   const [busqueda, setBusqueda] = useState("");
   const [curso, setCurso] = useState("todos");
   const [clubFiltro, setClubFiltro] = useState("todos");
 
+  const clubesMap = useMemo(() => new Map(clubes.map((c) => [c.id_club, c.nombre])), [clubes]);
   const cursos = useMemo(
-    () => Array.from(new Set(estudiantes.map((e) => e.curso))).sort((a, b) => a.localeCompare(b)),
+    () => Array.from(new Set(estudiantes.map((e) => e.curso).filter((c): c is NonNullable<typeof c> => !!c))).sort(),
     [estudiantes],
   );
   const clubesOrdenados = useMemo(() => [...clubes].sort((a, b) => a.nombre.localeCompare(b.nombre)), [clubes]);
-  const clubIdPorEstudiante = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const club of clubes) {
-      for (const id of club.miembrosActuales) map.set(id, club.id);
-    }
-    return map;
-  }, [clubes]);
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return estudiantes.filter((e) => {
-      if (q && !`${e.nombre} ${e.apellido} ${e.matricula} ${e.curso}`.toLowerCase().includes(q)) return false;
+      if (q && !`${e.nombre} ${e.apellido} ${e.matricula} ${e.curso ?? ""}`.toLowerCase().includes(q)) return false;
       if (curso !== "todos" && e.curso !== curso) return false;
 
       if (clubFiltro !== "todos") {
-        const clubNombre = clubPorEstudiante.get(e.id);
         if (clubFiltro === SIN_CLUB) {
-          if (clubNombre) return false;
+          if (e.id_club != null) return false;
         } else if (clubFiltro === CON_CLUB) {
-          if (!clubNombre) return false;
-        } else if (clubNombre !== clubFiltro) {
+          if (e.id_club == null) return false;
+        } else if (String(e.id_club) !== clubFiltro) {
           return false;
         }
       }
 
       return true;
     });
-  }, [estudiantes, busqueda, curso, clubFiltro, clubPorEstudiante]);
+  }, [estudiantes, busqueda, curso, clubFiltro]);
 
   const hayFiltrosActivos = busqueda !== "" || curso !== "todos" || clubFiltro !== "todos";
 
@@ -112,7 +104,7 @@ export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect
               <SelectItem value={CON_CLUB}>Con club</SelectItem>
               <SelectItem value={SIN_CLUB}>Sin club</SelectItem>
               {clubesOrdenados.map((c) => (
-                <SelectItem key={c.id} value={c.nombre}>
+                <SelectItem key={c.id_club} value={String(c.id_club)}>
                   {c.nombre}
                 </SelectItem>
               ))}
@@ -144,10 +136,9 @@ export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect
           {/* Mobile: lista de tarjetas — una tabla de 4+ columnas no cabe cómodamente en pantallas chicas */}
           <div className="space-y-2 md:hidden">
             {filtrados.map((e) => {
-              const clubNombre = clubPorEstudiante.get(e.id) ?? null;
-              const clubId = clubIdPorEstudiante.get(e.id) ?? null;
+              const clubNombre = e.id_club != null ? clubesMap.get(e.id_club) ?? null : null;
               return (
-                <div key={e.id} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+                <div key={e.id_estudiante} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
                   <div className="flex items-start justify-between gap-2">
                     <button
                       type="button"
@@ -156,10 +147,10 @@ export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect
                     >
                       {e.nombre} {e.apellido}
                     </button>
-                    <StudentRowActionsMenu estudiante={e} clubActualId={clubId} clubActualNombre={clubNombre} clubes={clubes} />
+                    <StudentRowActionsMenu estudiante={e} clubActualId={e.id_club} clubActualNombre={clubNombre} clubes={clubes} />
                   </div>
                   <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                    {e.curso} · {e.matricula}
+                    {e.curso ?? "Sin curso"} · {e.matricula}
                   </p>
                   <div className="mt-2">
                     {clubNombre ? (
@@ -187,10 +178,9 @@ export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect
               </TableHeader>
               <TableBody>
                 {filtrados.map((e) => {
-                  const clubNombre = clubPorEstudiante.get(e.id) ?? null;
-                  const clubId = clubIdPorEstudiante.get(e.id) ?? null;
+                  const clubNombre = e.id_club != null ? clubesMap.get(e.id_club) ?? null : null;
                   return (
-                    <TableRow key={e.id}>
+                    <TableRow key={e.id_estudiante}>
                       <TableCell>
                         <button
                           type="button"
@@ -200,7 +190,7 @@ export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect
                           {e.nombre} {e.apellido}
                         </button>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso}</TableCell>
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso ?? "—"}</TableCell>
                       <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.matricula}</TableCell>
                       <TableCell>
                         {clubNombre ? (
@@ -210,7 +200,7 @@ export function StudentsTable({ estudiantes, clubes, clubPorEstudiante, onSelect
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <StudentRowActionsMenu estudiante={e} clubActualId={clubId} clubActualNombre={clubNombre} clubes={clubes} />
+                        <StudentRowActionsMenu estudiante={e} clubActualId={e.id_club} clubActualNombre={clubNombre} clubes={clubes} />
                       </TableCell>
                     </TableRow>
                   );

@@ -22,7 +22,7 @@ import { removeMiembroDeClub } from "@/lib/actions/clubs.actions";
 import type { Estudiante } from "@/types";
 
 interface ClubMembersTableProps {
-  clubId: string;
+  clubId: number;
   miembros: Estudiante[];
 }
 
@@ -30,7 +30,7 @@ export function ClubMembersTable({ clubId, miembros }: ClubMembersTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  function handleRemove(estudianteId: string) {
+  function handleRemove(estudianteId: number) {
     startTransition(async () => {
       const res = await removeMiembroDeClub(clubId, estudianteId);
       if (!res.ok) {
@@ -63,13 +63,13 @@ export function ClubMembersTable({ clubId, miembros }: ClubMembersTableProps) {
         </TableHeader>
         <TableBody>
           {miembros.map((e) => (
-            <TableRow key={e.id}>
+            <TableRow key={e.id_estudiante}>
               <TableCell>
                 <Link href={`/admin/estudiantes?matricula=${e.matricula}`} className="font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400">
                   {e.nombre} {e.apellido}
                 </Link>
               </TableCell>
-              <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso}</TableCell>
+              <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso ?? "—"}</TableCell>
               <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.matricula}</TableCell>
               <TableCell className="text-right">
                 <AlertDialog>
@@ -89,7 +89,7 @@ export function ClubMembersTable({ clubId, miembros }: ClubMembersTableProps) {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleRemove(e.id)}>Quitar</AlertDialogAction>
+                      <AlertDialogAction onClick={() => handleRemove(e.id_estudiante)}>Quitar</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

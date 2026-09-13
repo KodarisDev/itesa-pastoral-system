@@ -1,10 +1,12 @@
 import type { NextAuthConfig } from "next-auth";
+import type { Permission } from "@/types";
 
 /**
- * Config "edge-safe": sin el Credentials provider (que necesita fs/bcrypt para leer
- * usuarios.json, no disponible en el Edge Runtime del middleware). Solo decodifica/valida
- * el JWT de sesión ya existente. lib/auth.ts extiende esta config añadiendo el provider real
- * para usarse en Server Actions y en el route handler (ambos corren en Node, no en Edge).
+ * Config "edge-safe": sin el Credentials provider (que necesita bcrypt +
+ * Supabase, no disponibles en el Edge Runtime del middleware). Solo
+ * decodifica/valida el JWT de sesión ya existente. lib/auth.ts extiende esta
+ * config añadiendo el provider real para usarse en Server Actions y en el
+ * route handler (ambos corren en Node, no en Edge).
  */
 export const authConfig: NextAuthConfig = {
   trustHost: true,
@@ -14,17 +16,23 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.rol = user.rol;
-        token.clubId = user.clubId;
-        token.tipoPersona = user.tipoPersona;
+        token.rolId = user.rolId;
+        token.rolNombre = user.rolNombre;
+        token.permisos = user.permisos;
+        token.clubIds = user.clubIds;
+        token.clubPrincipalId = user.clubPrincipalId;
+        token.idEstudiante = user.idEstudiante;
       }
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.sub as string;
-      session.user.rol = token.rol as typeof session.user.rol;
-      session.user.clubId = token.clubId as string | undefined;
-      session.user.tipoPersona = token.tipoPersona as typeof session.user.tipoPersona;
+      session.user.rolId = token.rolId as number;
+      session.user.rolNombre = token.rolNombre as string;
+      session.user.permisos = (token.permisos as Permission[] | undefined) ?? [];
+      session.user.clubIds = (token.clubIds as number[] | undefined) ?? [];
+      session.user.clubPrincipalId = (token.clubPrincipalId as number | null) ?? null;
+      session.user.idEstudiante = (token.idEstudiante as number | null) ?? null;
       return session;
     },
   },

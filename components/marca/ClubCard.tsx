@@ -4,17 +4,18 @@ import type { Club } from "@/types";
 
 interface ClubCardProps {
   club: Club;
+  miembrosActuales: number;
 }
 
-export function ClubCard({ club }: ClubCardProps) {
-  const cupoRestante = club.capacidadMaxima - club.miembrosActuales.length;
+export function ClubCard({ club, miembrosActuales }: ClubCardProps) {
+  const cupoRestante = club.capacidad != null ? club.capacidad - miembrosActuales : null;
 
   return (
     <div className="group flex h-full flex-col gap-3 rounded-3xl border border-neutral-100 p-3 transition-shadow hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-neutral-100">
-        {club.fotoUrl ? (
+        {club.foto ? (
           <Image
-            src={club.fotoUrl}
+            src={club.foto}
             alt={club.nombre}
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -30,14 +31,16 @@ export function ClubCard({ club }: ClubCardProps) {
             <Shapes className="h-10 w-10 text-brand/40" aria-hidden="true" />
           </div>
         )}
-        <span
-          className={
-            "absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide backdrop-blur-md " +
-            (cupoRestante > 0 ? "bg-white/90 text-neutral-700" : "bg-white/90 text-red-600")
-          }
-        >
-          {cupoRestante > 0 ? `${cupoRestante} cupos` : "Sin cupo"}
-        </span>
+        {cupoRestante != null && (
+          <span
+            className={
+              "absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide backdrop-blur-md " +
+              (cupoRestante > 0 ? "bg-white/90 text-neutral-700" : "bg-white/90 text-red-600")
+            }
+          >
+            {cupoRestante > 0 ? `${cupoRestante} cupos` : "Sin cupo"}
+          </span>
+        )}
       </div>
       <div className="px-2 pb-2">
         <h3 className="text-[15px] font-semibold leading-tight text-neutral-950">{club.nombre}</h3>

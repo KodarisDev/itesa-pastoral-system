@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { getClubById } from "@/lib/db/clubes";
 import { getSesionesEnriquecidas, type FiltroAsistencia } from "@/lib/reportes/asistencia";
 import { generarExcelAsistencia } from "@/lib/reportes/asistencia-excel";
@@ -19,43 +20,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
+  if (!tienePermiso(session.user.permisos, "asistencia:exportar")) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+
   const params = req.nextUrl.searchParams;
   const filtro: FiltroAsistencia = {};
   const descripcion: string[] = [];
   let clubNombreParaArchivo = "todos-los-clubes";
 
-  if (session.user.rol === "encargado_club") {
-    if (!session.user.clubId) {
+  if (session.user.rolNombre === "encargado_club") {
+    const idClub = session.user.clubPrincipalId ?? session.user.clubIds[0];
+    if (!idClub) {
       return NextResponse.json({ error: "No tienes un club asignado." }, { status: 403 });
     }
-    filtro.clubId = session.user.clubId;
-    const club = await getClubById(session.user.clubId);
+    filtro.clubId = idClub;
+    const club = await getClubById(idClub);
     descripcion.push(`Club: ${club?.nombre ?? "—"}`);
     clubNombreParaArchivo = slug(club?.nombre ?? "club");
-  } else if (session.user.rol === "pastoral") {
+  } else {
+    // Roles "del sistema" (pastoral, admin): no están ligados a un club, pueden filtrar por cualquiera o ver todos.
     const clubId = params.get("clubId");
     if (clubId && clubId !== "todos") {
-      filtro.clubId = clubId;
-      const club = await getClubById(clubId);
+      filtro.clubId = Number(clubId);
+      const club = await getClubById(Number(clubId));
       descripcion.push(`Club: ${club?.nombre ?? "—"}`);
       clubNombreParaArchivo = slug(club?.nombre ?? "club");
     } else {
       descripcion.push("Todos los clubes");
     }
-  } else {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  }
-
-  const anio = params.get("anioEscolar");
-  if (anio) {
-    filtro.anioEscolar = anio;
-    descripcion.push(`Año escolar: ${anio}`);
-  }
-
-  const ciclo = params.get("ciclo");
-  if (ciclo) {
-    filtro.cicloNumero = Number(ciclo);
-    descripcion.push(`Ciclo #${ciclo}`);
   }
 
   const fecha = params.get("fecha");

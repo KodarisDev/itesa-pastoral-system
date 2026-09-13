@@ -2,23 +2,23 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AttendanceSheet } from "@/components/club/AttendanceSheet";
 import { getClubById } from "@/lib/db/clubes";
-import { getEstudiantesByIds } from "@/lib/db/estudiantes";
-import { getAsistencia } from "@/lib/db/asistencias";
+import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
+import { getAsistenciaDia } from "@/lib/db/asistencia";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClubAsistenciaPage({ searchParams }: { searchParams: { fecha?: string } }) {
   const session = await auth();
-  if (!session?.user.clubId) redirect("/login");
-
-  const club = await getClubById(session.user.clubId);
-  if (!club) redirect("/login");
+  const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
+  if (!idClub) redirect("/login");
 
   const fecha = searchParams.fecha ?? new Date().toISOString().slice(0, 10);
-  const [miembros, sesionExistente] = await Promise.all([
-    getEstudiantesByIds(club.miembrosActuales),
-    getAsistencia(club.id, fecha),
+  const [club, miembros, registrosDia] = await Promise.all([
+    getClubById(idClub),
+    getEstudiantesPorClub(idClub),
+    getAsistenciaDia(idClub, fecha),
   ]);
+  if (!club) redirect("/login");
 
   return (
     <div className="space-y-6">
@@ -26,13 +26,7 @@ export default async function ClubAsistenciaPage({ searchParams }: { searchParam
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Pasar lista</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{club.nombre} — marca quién asistió y guarda la asistencia.</p>
       </div>
-      <AttendanceSheet
-        key={fecha}
-        clubId={club.id}
-        fecha={fecha}
-        miembros={miembros}
-        registrosIniciales={sesionExistente?.registros ?? []}
-      />
+      <AttendanceSheet key={fecha} clubId={club.id_club} fecha={fecha} miembros={miembros} registrosIniciales={registrosDia} />
     </div>
   );
 }

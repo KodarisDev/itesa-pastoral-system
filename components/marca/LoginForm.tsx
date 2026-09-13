@@ -40,14 +40,14 @@ export function LoginForm() {
       }
 
       const session = await getSession();
-      const rol = session?.user?.rol;
+      const rolNombre = session?.user?.rolNombre;
       const callbackUrl = searchParams.get("callbackUrl");
 
       if (callbackUrl && callbackUrl.startsWith("/") ) {
         router.push(callbackUrl);
-      } else if (rol === "pastoral") {
+      } else if (rolNombre === "pastoral") {
         router.push("/admin");
-      } else if (rol === "encargado_club") {
+      } else if (rolNombre === "encargado_club") {
         router.push("/club");
       } else {
         router.push("/");

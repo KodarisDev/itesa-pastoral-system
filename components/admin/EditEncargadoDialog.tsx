@@ -19,21 +19,31 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usuarioEncargadoUpdateSchema } from "@/lib/validations/usuario.schema";
 import { updateUsuarioEncargado } from "@/lib/actions/users.actions";
-import type { Club, Usuario } from "@/types";
+import type { Club, Estudiante, Usuario } from "@/types";
 
-export function EditEncargadoDialog({ usuario, clubes }: { usuario: Usuario; clubes: Club[] }) {
+interface EditEncargadoDialogProps {
+  usuario: Usuario;
+  clubes: Club[];
+  clubActualId: number | null;
+  principalActual: boolean;
+  estudianteVinculado: Estudiante | null;
+}
+
+export function EditEncargadoDialog({ usuario, clubes, clubActualId, principalActual, estudianteVinculado }: EditEncargadoDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [tipoPersona, setTipoPersona] = useState<"estudiante" | "profesor">(usuario.tipoPersona ?? "estudiante");
-  const [clubId, setClubId] = useState(usuario.clubId ?? "");
+  const [clubId, setClubId] = useState(clubActualId ? String(clubActualId) : "");
+  const [principal, setPrincipal] = useState(principalActual);
+  const [matricula, setMatricula] = useState(estudianteVinculado?.matricula ?? "");
   const [password, setPassword] = useState("");
 
   function reset() {
     setFieldErrors({});
-    setTipoPersona(usuario.tipoPersona ?? "estudiante");
-    setClubId(usuario.clubId ?? "");
+    setClubId(clubActualId ? String(clubActualId) : "");
+    setPrincipal(principalActual);
+    setMatricula(estudianteVinculado?.matricula ?? "");
     setPassword("");
   }
 
@@ -43,8 +53,10 @@ export function EditEncargadoDialog({ usuario, clubes }: { usuario: Usuario; clu
     const raw = {
       nombre: formData.get("nombre"),
       username: formData.get("username"),
-      tipoPersona,
+      idRol: usuario.id_rol,
       clubId,
+      principal,
+      matriculaEstudiante: matricula,
       password,
     };
     const parsed = usuarioEncargadoUpdateSchema.safeParse(raw);
@@ -53,19 +65,19 @@ export function EditEncargadoDialog({ usuario, clubes }: { usuario: Usuario; clu
       setFieldErrors({
         nombre: flat.nombre?.[0] ?? "",
         username: flat.username?.[0] ?? "",
-        tipoPersona: flat.tipoPersona?.[0] ?? "",
-        clubId: flat.clubId?.[0] ?? "",
         password: flat.password?.[0] ?? "",
       });
       return;
     }
     setFieldErrors({});
-    formData.set("tipoPersona", tipoPersona);
+    formData.set("idRol", String(usuario.id_rol));
     formData.set("clubId", clubId);
+    formData.set("principal", String(principal));
+    formData.set("matriculaEstudiante", matricula);
     formData.set("password", password);
 
     startTransition(async () => {
-      const res = await updateUsuarioEncargado(usuario.id, formData);
+      const res = await updateUsuarioEncargado(usuario.id_usuario, formData);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -97,9 +109,9 @@ export function EditEncargadoDialog({ usuario, clubes }: { usuario: Usuario; clu
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 px-6 py-6">
             <div>
-              <Label htmlFor={`edit-nombre-${usuario.id}`}>Nombre completo</Label>
+              <Label htmlFor={`edit-nombre-${usuario.id_usuario}`}>Nombre completo</Label>
               <Input
-                id={`edit-nombre-${usuario.id}`}
+                id={`edit-nombre-${usuario.id_usuario}`}
                 name="nombre"
                 defaultValue={usuario.nombre}
                 invalid={!!fieldErrors.nombre}
@@ -112,11 +124,11 @@ export function EditEncargadoDialog({ usuario, clubes }: { usuario: Usuario; clu
               )}
             </div>
             <div>
-              <Label htmlFor={`edit-username-${usuario.id}`}>Usuario</Label>
+              <Label htmlFor={`edit-username-${usuario.id_usuario}`}>Usuario</Label>
               <Input
-                id={`edit-username-${usuario.id}`}
+                id={`edit-username-${usuario.id_usuario}`}
                 name="username"
-                defaultValue={usuario.username}
+                defaultValue={usuario.usuario}
                 invalid={!!fieldErrors.username}
                 placeholder="Ej. profesor.musica"
               />
@@ -127,46 +139,40 @@ export function EditEncargadoDialog({ usuario, clubes }: { usuario: Usuario; clu
               )}
             </div>
             <div>
-              <Label htmlFor={`edit-tipoPersona-${usuario.id}`}>Tipo de encargado</Label>
-              <Select value={tipoPersona} onValueChange={(v) => setTipoPersona(v as "estudiante" | "profesor")}>
-                <SelectTrigger id={`edit-tipoPersona-${usuario.id}`}>
-                  <SelectValue placeholder="Selecciona una opción" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="estudiante">Estudiante</SelectItem>
-                  <SelectItem value="profesor">Profesor</SelectItem>
-                </SelectContent>
-              </Select>
-              {fieldErrors.tipoPersona && (
-                <p role="alert" className="mt-1.5 text-sm text-destructive">
-                  {fieldErrors.tipoPersona}
-                </p>
-              )}
+              <Label htmlFor={`edit-matricula-${usuario.id_usuario}`}>Matrícula (solo si es un estudiante)</Label>
+              <Input
+                id={`edit-matricula-${usuario.id_usuario}`}
+                value={matricula}
+                onChange={(e) => setMatricula(e.target.value)}
+                placeholder="Déjalo en blanco si es un profesor"
+              />
             </div>
             <div>
-              <Label htmlFor={`edit-clubId-${usuario.id}`}>Club a dirigir</Label>
-              <Select value={clubId} onValueChange={setClubId}>
-                <SelectTrigger id={`edit-clubId-${usuario.id}`}>
-                  <SelectValue placeholder="Selecciona un club" />
+              <Label htmlFor={`edit-clubId-${usuario.id_usuario}`}>Club a dirigir (opcional)</Label>
+              <Select value={clubId || "none"} onValueChange={(v) => setClubId(v === "none" ? "" : v)}>
+                <SelectTrigger id={`edit-clubId-${usuario.id_usuario}`}>
+                  <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {clubes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nombre} {c.encargadoUsuarioId && c.encargadoUsuarioId !== usuario.id ? "(ya tiene encargado)" : ""}
+                    <SelectItem key={c.id_club} value={String(c.id_club)}>
+                      {c.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {fieldErrors.clubId && (
-                <p role="alert" className="mt-1.5 text-sm text-destructive">
-                  {fieldErrors.clubId}
-                </p>
-              )}
             </div>
+            {clubId && (
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" checked={principal} onChange={(e) => setPrincipal(e.target.checked)} className="h-4 w-4 rounded" />
+                Es el encargado principal del club
+              </label>
+            )}
             <div>
-              <Label htmlFor={`edit-password-${usuario.id}`}>Nueva contraseña (opcional)</Label>
+              <Label htmlFor={`edit-password-${usuario.id_usuario}`}>Nueva contraseña (opcional)</Label>
               <Input
-                id={`edit-password-${usuario.id}`}
+                id={`edit-password-${usuario.id_usuario}`}
                 name="password"
                 type="text"
                 value={password}

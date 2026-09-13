@@ -3,49 +3,43 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { asistenciaSchema, type AsistenciaFormValues } from "@/lib/validations/attendance.schema";
-import { saveAsistencia } from "@/lib/db/asistencias";
-import { getClubById } from "@/lib/db/clubes";
-import { getMeta } from "@/lib/db/meta";
-import { generarId } from "@/lib/utils";
+import { guardarAsistencia } from "@/lib/db/asistencia";
+import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
+import { requirePermisoEnClub } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 export async function submitAttendance(values: AsistenciaFormValues): Promise<ActionResult> {
   try {
     const session = await auth();
-    if (!session || session.user.rol !== "encargado_club") {
-      return actionError("No tienes permiso para pasar lista.");
-    }
+    if (!session) return actionError("No tienes permiso para pasar lista.");
 
     const parsed = asistenciaSchema.safeParse(values);
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos de la asistencia.");
     }
 
-    if (session.user.clubId !== parsed.data.clubId) {
-      return actionError("Solo puedes pasar lista en el club que tienes asignado.");
-    }
+    await requirePermisoEnClub("asistencia:pasar", parsed.data.clubId);
 
-    const club = await getClubById(parsed.data.clubId);
-    if (!club) return actionError("El club no existe.");
+    const miembros = await getEstudiantesPorClub(parsed.data.clubId);
+    const idsValidos = new Set(miembros.map((m) => m.id_estudiante));
 
-    const idsValidos = new Set(club.miembrosActuales);
-    const registrosFiltrados = parsed.data.registros.filter((r) => idsValidos.has(r.estudianteId));
+    const registros = parsed.data.registros
+      .filter((r) => idsValidos.has(r.estudianteId))
+      .map((r) => ({
+        id_estudiante: r.estudianteId,
+        id_club: parsed.data.clubId,
+        fecha: parsed.data.fecha,
+        estado: r.presente ? ("Presente" as const) : r.justificacion ? ("Justificado" as const) : ("Ausente" as const),
+        nota: r.justificacion ?? null,
+        id_usuario: Number(session.user.id),
+      }));
 
-    const meta = await getMeta();
-
-    await saveAsistencia({
-      id: generarId("asis"),
-      clubId: parsed.data.clubId,
-      fecha: parsed.data.fecha,
-      registros: registrosFiltrados,
-      tomadaPorUsuarioId: session.user.id,
-      anioEscolar: meta.anioActual,
-    });
+    await guardarAsistencia(registros);
 
     revalidatePath("/club/asistencia");
     revalidatePath("/club/historial");
     return actionOk(undefined);
-  } catch {
-    return actionError("No se pudo guardar la asistencia. Inténtalo de nuevo.");
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo guardar la asistencia. Inténtalo de nuevo.");
   }
 }

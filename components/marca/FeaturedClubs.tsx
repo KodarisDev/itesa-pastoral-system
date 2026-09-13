@@ -7,9 +7,10 @@ import type { Club } from "@/types";
 
 interface FeaturedClubsProps {
   clubes: Club[];
+  miembrosPorClub: Map<number, number>;
 }
 
-export function FeaturedClubs({ clubes }: FeaturedClubsProps) {
+export function FeaturedClubs({ clubes, miembrosPorClub }: FeaturedClubsProps) {
   if (clubes.length === 0) return null;
 
   return (
@@ -25,8 +26,8 @@ export function FeaturedClubs({ clubes }: FeaturedClubsProps) {
 
       <StaggerContainer className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {clubes.map((club) => (
-          <StaggerItem key={club.id}>
-            <ClubCard club={club} />
+          <StaggerItem key={club.id_club}>
+            <ClubCard club={club} miembrosActuales={miembrosPorClub.get(club.id_club) ?? 0} />
           </StaggerItem>
         ))}
       </StaggerContainer>

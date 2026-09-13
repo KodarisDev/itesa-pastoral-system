@@ -10,18 +10,17 @@ import type { Estudiante } from "@/types";
 
 interface InscripcionManagerProps {
   estudiantes: Estudiante[];
-  clubPorEstudiante: Map<string, string>;
   clubNombre: string;
 }
 
-export function InscripcionManager({ estudiantes, clubPorEstudiante, clubNombre }: InscripcionManagerProps) {
+export function InscripcionManager({ estudiantes, clubNombre }: InscripcionManagerProps) {
   const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  const sinClub = estudiantes.filter((e) => !clubPorEstudiante.has(e.id));
+  const sinClub = estudiantes.filter((e) => e.id_club == null);
   const q = busqueda.trim().toLowerCase();
   const filtrados = q
-    ? sinClub.filter((e) => `${e.nombre} ${e.apellido} ${e.matricula} ${e.curso}`.toLowerCase().includes(q))
+    ? sinClub.filter((e) => `${e.nombre} ${e.apellido} ${e.matricula} ${e.curso ?? ""}`.toLowerCase().includes(q))
     : sinClub;
 
   return (
@@ -58,11 +57,11 @@ export function InscripcionManager({ estudiantes, clubPorEstudiante, clubNombre 
           </TableHeader>
           <TableBody>
             {filtrados.map((e) => (
-              <TableRow key={e.id}>
+              <TableRow key={e.id_estudiante}>
                 <TableCell className="font-medium text-gray-900 dark:text-white">
                   {e.nombre} {e.apellido}
                 </TableCell>
-                <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso}</TableCell>
+                <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso ?? "—"}</TableCell>
                 <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.matricula}</TableCell>
               </TableRow>
             ))}
@@ -77,13 +76,7 @@ export function InscripcionManager({ estudiantes, clubPorEstudiante, clubNombre 
         </Table>
       </div>
 
-      <InscribirEstudianteModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        estudiantes={estudiantes}
-        clubPorEstudiante={clubPorEstudiante}
-        clubNombre={clubNombre}
-      />
+      <InscribirEstudianteModal open={modalOpen} onOpenChange={setModalOpen} estudiantes={estudiantes} clubNombre={clubNombre} />
     </div>
   );
 }

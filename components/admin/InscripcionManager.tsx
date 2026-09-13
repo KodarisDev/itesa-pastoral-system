@@ -11,21 +11,21 @@ import type { Club, Estudiante } from "@/types";
 interface InscripcionManagerProps {
   estudiantes: Estudiante[];
   clubes: Club[];
-  clubPorEstudiante: Map<string, string>;
+  miembrosPorClub: Map<number, number>;
 }
 
-export function InscripcionManager({ estudiantes, clubes, clubPorEstudiante }: InscripcionManagerProps) {
+export function InscripcionManager({ estudiantes, clubes, miembrosPorClub }: InscripcionManagerProps) {
   const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [preseleccion, setPreseleccion] = useState<string | null>(null);
+  const [preseleccion, setPreseleccion] = useState<number | null>(null);
 
-  const sinClub = estudiantes.filter((e) => !clubPorEstudiante.has(e.id));
+  const sinClub = estudiantes.filter((e) => e.id_club == null);
   const q = busqueda.trim().toLowerCase();
   const filtrados = q
-    ? sinClub.filter((e) => `${e.nombre} ${e.apellido} ${e.matricula} ${e.curso}`.toLowerCase().includes(q))
+    ? sinClub.filter((e) => `${e.nombre} ${e.apellido} ${e.matricula} ${e.curso ?? ""}`.toLowerCase().includes(q))
     : sinClub;
 
-  function abrirModal(estudianteId?: string) {
+  function abrirModal(estudianteId?: number) {
     setPreseleccion(estudianteId ?? null);
     setModalOpen(true);
   }
@@ -65,14 +65,14 @@ export function InscripcionManager({ estudiantes, clubes, clubPorEstudiante }: I
           </TableHeader>
           <TableBody>
             {filtrados.map((e) => (
-              <TableRow key={e.id}>
+              <TableRow key={e.id_estudiante}>
                 <TableCell className="font-medium text-gray-900 dark:text-white">
                   {e.nombre} {e.apellido}
                 </TableCell>
-                <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso}</TableCell>
+                <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso ?? "—"}</TableCell>
                 <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.matricula}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="outline" size="sm" onClick={() => abrirModal(e.id)}>
+                  <Button variant="outline" size="sm" onClick={() => abrirModal(e.id_estudiante)}>
                     Inscribir
                   </Button>
                 </TableCell>
@@ -94,7 +94,7 @@ export function InscripcionManager({ estudiantes, clubes, clubPorEstudiante }: I
         onOpenChange={setModalOpen}
         estudiantes={estudiantes}
         clubes={clubes}
-        clubPorEstudiante={clubPorEstudiante}
+        miembrosPorClub={miembrosPorClub}
         preselectedEstudianteId={preseleccion}
       />
     </div>

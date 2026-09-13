@@ -3,28 +3,50 @@
 import { useState } from "react";
 import { ClubsTable } from "@/components/admin/ClubsTable";
 import { ClubDetailModal } from "@/components/admin/ClubDetailModal";
-import type { Club, Estudiante, Usuario } from "@/types";
+import type { Club, Encargado, Estudiante, Usuario } from "@/types";
 
 interface ClubsManagerProps {
   clubes: Club[];
-  encargados: Usuario[];
+  usuarios: Usuario[];
+  encargados: Encargado[];
   estudiantes: Estudiante[];
 }
 
-export function ClubsManager({ clubes, encargados, estudiantes }: ClubsManagerProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: ClubsManagerProps) {
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  // Se deriva de las props (no de un snapshot guardado en estado) para que, tras una
-  // acción dentro del modal (iniciar ciclo, quitar miembro) y el router.refresh() que
-  // trae datos nuevos, el modal siga abierto pero muestre la información actualizada.
-  const club = clubes.find((c) => c.id === selectedId) ?? null;
-  const encargado = club?.encargadoUsuarioId ? (encargados.find((u) => u.id === club.encargadoUsuarioId) ?? null) : null;
-  const miembros = club ? estudiantes.filter((e) => club.miembrosActuales.includes(e.id)) : [];
+  const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
+
+  const principalPorClub = new Map<number, string>();
+  const miembrosPorClub = new Map<number, number>();
+  for (const e of encargados) {
+    if (!e.encargado_principal) continue;
+    const nombre = usuariosMap.get(e.id_usuario)?.nombre;
+    if (nombre) principalPorClub.set(e.id_club, nombre);
+  }
+  for (const est of estudiantes) {
+    if (est.id_club == null) continue;
+    miembrosPorClub.set(est.id_club, (miembrosPorClub.get(est.id_club) ?? 0) + 1);
+  }
+
+  const club = clubes.find((c) => c.id_club === selectedId) ?? null;
+  const encargadosDelClub = club
+    ? encargados
+        .filter((e) => e.id_club === club.id_club)
+        .map((e) => ({ ...e, usuarioNombre: usuariosMap.get(e.id_usuario)?.nombre ?? "—" }))
+    : [];
+  const miembros = club ? estudiantes.filter((e) => e.id_club === club.id_club) : [];
 
   return (
     <>
-      <ClubsTable clubes={clubes} encargados={encargados} onSelect={(c) => setSelectedId(c.id)} />
-      <ClubDetailModal club={club} encargado={encargado} miembros={miembros} onClose={() => setSelectedId(null)} />
+      <ClubsTable
+        clubes={clubes}
+        encargadosDisponibles={usuarios}
+        principalPorClub={principalPorClub}
+        miembrosPorClub={miembrosPorClub}
+        onSelect={(c) => setSelectedId(c.id_club)}
+      />
+      <ClubDetailModal club={club} encargados={encargadosDelClub} miembros={miembros} onClose={() => setSelectedId(null)} />
     </>
   );
 }

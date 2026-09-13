@@ -24,25 +24,29 @@ import type { Club, Usuario } from "@/types";
 
 interface ClubsTableProps {
   clubes: Club[];
-  encargados: Usuario[];
+  encargadosDisponibles: Usuario[];
+  principalPorClub: Map<number, string>;
+  miembrosPorClub: Map<number, number>;
   onSelect: (club: Club) => void;
 }
 
 interface ClubRowAccionesProps {
   club: Club;
-  encargados: Usuario[];
+  encargadoPrincipalId?: number | null;
+  encargadosDisponibles: Usuario[];
   isPending: boolean;
-  onDelete: (clubId: string) => void;
+  onDelete: (clubId: number) => void;
   onSelect: (club: Club) => void;
 }
 
-function ClubRowAcciones({ club, encargados, isPending, onDelete, onSelect }: ClubRowAccionesProps) {
+function ClubRowAcciones({ club, encargadoPrincipalId, encargadosDisponibles, isPending, onDelete, onSelect }: ClubRowAccionesProps) {
   return (
     <div className="flex items-center justify-end gap-1">
       <ClubFormDialog
         mode="editar"
         club={club}
-        encargados={encargados}
+        encargadoPrincipalId={encargadoPrincipalId}
+        encargados={encargadosDisponibles}
         trigger={
           <Button variant="ghost" size="icon" aria-label={`Editar ${club.nombre}`}>
             <Pencil className="h-4 w-4" aria-hidden="true" />
@@ -64,7 +68,7 @@ function ClubRowAcciones({ club, encargados, isPending, onDelete, onSelect }: Cl
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onDelete(club.id)}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={() => onDelete(club.id_club)}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -75,12 +79,11 @@ function ClubRowAcciones({ club, encargados, isPending, onDelete, onSelect }: Cl
   );
 }
 
-export function ClubsTable({ clubes, encargados, onSelect }: ClubsTableProps) {
+export function ClubsTable({ clubes, encargadosDisponibles, principalPorClub, miembrosPorClub, onSelect }: ClubsTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const encargadosMap = new Map(encargados.map((u) => [u.id, u]));
 
-  function handleDelete(clubId: string) {
+  function handleDelete(clubId: number) {
     startTransition(async () => {
       const res = await deleteClub(clubId);
       if (!res.ok) {
@@ -102,37 +105,37 @@ export function ClubsTable({ clubes, encargados, onSelect }: ClubsTableProps) {
 
   return (
     <>
-      {/* Mobile: tarjetas — una tabla de 6 columnas no cabe cómodamente en pantallas chicas */}
+      {/* Mobile: tarjetas — una tabla de varias columnas no cabe cómodamente en pantallas chicas */}
       <div className="space-y-2 md:hidden">
         {clubes.map((club) => {
-          const encargado = club.encargadoUsuarioId ? encargadosMap.get(club.encargadoUsuarioId) : undefined;
-          const lleno = club.miembrosActuales.length >= club.capacidadMaxima;
+          const encargadoNombre = principalPorClub.get(club.id_club);
+          const miembros = miembrosPorClub.get(club.id_club) ?? 0;
+          const lleno = club.capacidad != null && miembros >= club.capacidad;
           return (
-            <div key={club.id} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+            <div key={club.id_club} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(club)}
-                    className="text-left font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400"
-                  >
-                    {club.nombre}
-                  </button>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{club.duracionMeses <= 4 ? "Ciclo corto" : "Ciclo largo"}</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelect(club)}
+                  className="text-left font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400"
+                >
+                  {club.nombre}
+                </button>
                 <Badge variant={lleno ? "destructive" : "secondary"}>
-                  {club.miembrosActuales.length} / {club.capacidadMaxima}
+                  {miembros} / {club.capacidad ?? "∞"}
                 </Badge>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                {encargado ? <span>{encargado.nombre}</span> : <Badge variant="warning">Sin encargado</Badge>}
-                <span className="text-gray-300 dark:text-neutral-700">·</span>
-                <span>{club.duracionMeses} meses</span>
-                <span className="text-gray-300 dark:text-neutral-700">·</span>
-                <span>Ciclo #{club.cicloActual.numero}</span>
+                {encargadoNombre ? <span>{encargadoNombre}</span> : <Badge variant="warning">Sin encargado</Badge>}
               </div>
               <div className="mt-3 border-t border-gray-100 pt-3 dark:border-neutral-800">
-                <ClubRowAcciones club={club} encargados={encargados} isPending={isPending} onDelete={handleDelete} onSelect={onSelect} />
+                <ClubRowAcciones
+                  club={club}
+                  encargadosDisponibles={encargadosDisponibles}
+                  isPending={isPending}
+                  onDelete={handleDelete}
+                  onSelect={onSelect}
+                />
               </div>
             </div>
           );
@@ -146,18 +149,17 @@ export function ClubsTable({ clubes, encargados, onSelect }: ClubsTableProps) {
             <TableRow>
               <TableHead>Club</TableHead>
               <TableHead>Encargado</TableHead>
-              <TableHead>Duración</TableHead>
-              <TableHead>Ciclo</TableHead>
               <TableHead>Miembros</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {clubes.map((club) => {
-              const encargado = club.encargadoUsuarioId ? encargadosMap.get(club.encargadoUsuarioId) : undefined;
-              const lleno = club.miembrosActuales.length >= club.capacidadMaxima;
+              const encargadoNombre = principalPorClub.get(club.id_club);
+              const miembros = miembrosPorClub.get(club.id_club) ?? 0;
+              const lleno = club.capacidad != null && miembros >= club.capacidad;
               return (
-                <TableRow key={club.id}>
+                <TableRow key={club.id_club}>
                   <TableCell>
                     <button
                       type="button"
@@ -166,24 +168,27 @@ export function ClubsTable({ clubes, encargados, onSelect }: ClubsTableProps) {
                     >
                       {club.nombre}
                     </button>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{club.duracionMeses <= 4 ? "Ciclo corto" : "Ciclo largo"}</p>
                   </TableCell>
                   <TableCell>
-                    {encargado ? (
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{encargado.nombre}</span>
+                    {encargadoNombre ? (
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{encargadoNombre}</span>
                     ) : (
                       <Badge variant="warning">Sin encargado</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">{club.duracionMeses} meses</TableCell>
-                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">Ciclo #{club.cicloActual.numero}</TableCell>
                   <TableCell>
                     <Badge variant={lleno ? "destructive" : "secondary"}>
-                      {club.miembrosActuales.length} / {club.capacidadMaxima}
+                      {miembros} / {club.capacidad ?? "∞"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <ClubRowAcciones club={club} encargados={encargados} isPending={isPending} onDelete={handleDelete} onSelect={onSelect} />
+                    <ClubRowAcciones
+                      club={club}
+                      encargadosDisponibles={encargadosDisponibles}
+                      isPending={isPending}
+                      onDelete={handleDelete}
+                      onSelect={onSelect}
+                    />
                   </TableCell>
                 </TableRow>
               );

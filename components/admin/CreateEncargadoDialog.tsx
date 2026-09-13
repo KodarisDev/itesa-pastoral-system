@@ -21,20 +21,22 @@ import { usuarioEncargadoSchema } from "@/lib/validations/usuario.schema";
 import { createUsuarioEncargado } from "@/lib/actions/users.actions";
 import type { Club } from "@/types";
 
-export function CreateEncargadoDialog({ clubes }: { clubes: Club[] }) {
+export function CreateEncargadoDialog({ clubes, idRolEncargado }: { clubes: Club[]; idRolEncargado: number }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [tipoPersona, setTipoPersona] = useState<"estudiante" | "profesor" | "">("");
   const [clubId, setClubId] = useState("");
+  const [matricula, setMatricula] = useState("");
+  const [principal, setPrincipal] = useState(true);
   const [credenciales, setCredenciales] = useState<{ username: string; password: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
 
   function reset() {
     setFieldErrors({});
-    setTipoPersona("");
     setClubId("");
+    setMatricula("");
+    setPrincipal(true);
     setCredenciales(null);
     setCopiado(false);
   }
@@ -45,8 +47,10 @@ export function CreateEncargadoDialog({ clubes }: { clubes: Club[] }) {
     const raw = {
       nombre: formData.get("nombre"),
       username: formData.get("username"),
-      tipoPersona: tipoPersona || undefined,
+      idRol: idRolEncargado,
       clubId,
+      principal,
+      matriculaEstudiante: matricula,
     };
     const parsed = usuarioEncargadoSchema.safeParse(raw);
     if (!parsed.success) {
@@ -54,14 +58,14 @@ export function CreateEncargadoDialog({ clubes }: { clubes: Club[] }) {
       setFieldErrors({
         nombre: flat.nombre?.[0] ?? "",
         username: flat.username?.[0] ?? "",
-        tipoPersona: flat.tipoPersona?.[0] ?? "",
-        clubId: flat.clubId?.[0] ?? "",
       });
       return;
     }
     setFieldErrors({});
-    formData.set("tipoPersona", tipoPersona);
+    formData.set("idRol", String(idRolEncargado));
     formData.set("clubId", clubId);
+    formData.set("principal", String(principal));
+    formData.set("matriculaEstudiante", matricula);
 
     startTransition(async () => {
       const res = await createUsuarioEncargado(formData);
@@ -125,42 +129,42 @@ export function CreateEncargadoDialog({ clubes }: { clubes: Club[] }) {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="tipoPersona">Tipo de encargado</Label>
-                  <Select value={tipoPersona} onValueChange={(v) => setTipoPersona(v as "estudiante" | "profesor")}>
-                    <SelectTrigger id="tipoPersona">
-                      <SelectValue placeholder="Selecciona una opción" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="estudiante">Estudiante</SelectItem>
-                      <SelectItem value="profesor">Profesor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {fieldErrors.tipoPersona && (
-                    <p role="alert" className="mt-1.5 text-sm text-destructive">
-                      {fieldErrors.tipoPersona}
-                    </p>
-                  )}
+                  <Label htmlFor="matricula">Matrícula (solo si es un estudiante)</Label>
+                  <Input
+                    id="matricula"
+                    value={matricula}
+                    onChange={(e) => setMatricula(e.target.value)}
+                    placeholder="Déjalo en blanco si es un profesor"
+                  />
+                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                    Si lo llenas, este encargado quedará como miembro de su propio club automáticamente.
+                  </p>
                 </div>
                 <div>
-                  <Label htmlFor="clubId">Club a dirigir</Label>
-                  <Select value={clubId} onValueChange={setClubId}>
+                  <Label htmlFor="clubId">Club a dirigir (opcional)</Label>
+                  <Select value={clubId || "none"} onValueChange={(v) => setClubId(v === "none" ? "" : v)}>
                     <SelectTrigger id="clubId">
-                      <SelectValue placeholder="Selecciona un club" />
+                      <SelectValue placeholder="Sin asignar" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Sin asignar (lo asigno después)</SelectItem>
                       {clubes.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.nombre} {c.encargadoUsuarioId ? "(ya tiene encargado)" : ""}
+                        <SelectItem key={c.id_club} value={String(c.id_club)}>
+                          {c.nombre}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {fieldErrors.clubId && (
-                    <p role="alert" className="mt-1.5 text-sm text-destructive">
-                      {fieldErrors.clubId}
-                    </p>
-                  )}
+                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                    Puedes crear la cuenta primero y asignarle un club después, desde Editar.
+                  </p>
                 </div>
+                {clubId && (
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" checked={principal} onChange={(e) => setPrincipal(e.target.checked)} className="h-4 w-4 rounded" />
+                    Es el encargado principal del club
+                  </label>
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>

@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { previewRoster, confirmRosterUpload } from "@/lib/actions/students.actions";
 import type { ResultadoParseoExcel } from "@/lib/excel";
@@ -24,7 +23,6 @@ export function RosterUploadDialog() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [anioEscolar, setAnioEscolar] = useState(String(new Date().getFullYear()));
   const [preview, setPreview] = useState<ResultadoParseoExcel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,14 +49,12 @@ export function RosterUploadDialog() {
   function handleConfirm() {
     if (!preview) return;
     startTransition(async () => {
-      const res = await confirmRosterUpload(preview.validas, anioEscolar);
+      const res = await confirmRosterUpload(preview.validas);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
-      toast.success(
-        `Listado cargado: ${res.data.totalEstudiantes} estudiante(s). ${res.data.archivados} membresía(s) de club pasaron al historial.`,
-      );
+      toast.success(`Listado cargado: ${res.data.totalEstudiantes} estudiante(s) nuevo(s) dado(s) de alta.`);
       setOpen(false);
       reset();
       router.refresh();
@@ -83,23 +79,14 @@ export function RosterUploadDialog() {
         <DialogHeader>
           <DialogTitle>Cargar listado de estudiantes</DialogTitle>
           <DialogDescription>
-            Sube el Excel con columnas Nombre, Apellido, Curso y Matrícula. Esto reemplaza el listado vigente e
-            inicia un nuevo año escolar: las membresías actuales de todos los clubes pasarán al historial.
+            Sube el Excel con columnas Nombre, Apellido, Curso y Matrícula. Los estudiantes se dan de alta como
+            nuevos, sin club asignado — esto no afecta al listado ni a los clubes existentes.
           </DialogDescription>
         </DialogHeader>
 
         {!preview ? (
           <form onSubmit={handlePreview}>
             <div className="space-y-4 px-6 py-6">
-              <div>
-                <Label htmlFor="anioEscolar">Año escolar</Label>
-                <Input
-                  id="anioEscolar"
-                  value={anioEscolar}
-                  onChange={(e) => setAnioEscolar(e.target.value)}
-                  placeholder="Ej. 2026 o 2026-2027"
-                />
-              </div>
               <div>
                 <Label htmlFor="archivo">Archivo Excel (.xlsx)</Label>
                 <input

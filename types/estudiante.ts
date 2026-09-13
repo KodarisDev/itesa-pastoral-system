@@ -1,8 +1,11 @@
+export type Curso = "4to" | "5to" | "6to";
+
 export interface Estudiante {
-  id: string; // = matricula, identificador estable a través de años escolares
+  id_estudiante: number;
+  id_club: number | null;
   nombre: string;
   apellido: string;
-  curso: string;
   matricula: string;
-  anioEscolar: string;
+  curso: Curso | null;
+  activo: boolean;
 }

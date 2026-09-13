@@ -24,12 +24,8 @@ interface InscribirEstudianteModalProps {
   onOpenChange: (open: boolean) => void;
   estudiantes: Estudiante[];
   clubes: Club[];
-  clubPorEstudiante: Map<string, string>;
-  preselectedEstudianteId?: string | null;
-}
-
-function cupoDisponible(club: Club) {
-  return club.capacidadMaxima - club.miembrosActuales.length;
+  miembrosPorClub: Map<number, number>;
+  preselectedEstudianteId?: number | null;
 }
 
 export function InscribirEstudianteModal({
@@ -37,15 +33,18 @@ export function InscribirEstudianteModal({
   onOpenChange,
   estudiantes,
   clubes,
-  clubPorEstudiante,
+  miembrosPorClub,
   preselectedEstudianteId,
 }: InscribirEstudianteModalProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [estudianteId, setEstudianteId] = useState<string | null>(null);
+  const [estudianteId, setEstudianteId] = useState<number | null>(null);
   const [clubId, setClubId] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const clubesMap = useMemo(() => new Map(clubes.map((c) => [c.id_club, c.nombre])), [clubes]);
+  const cupoDisponible = (club: Club) => (club.capacidad ?? Infinity) - (miembrosPorClub.get(club.id_club) ?? 0);
 
   useEffect(() => {
     if (open) {
@@ -57,7 +56,7 @@ export function InscribirEstudianteModal({
   }, [open, preselectedEstudianteId]);
 
   const estudianteSeleccionado = useMemo(
-    () => estudiantes.find((e) => e.id === estudianteId) ?? null,
+    () => estudiantes.find((e) => e.id_estudiante === estudianteId) ?? null,
     [estudiantes, estudianteId],
   );
 
@@ -69,15 +68,13 @@ export function InscribirEstudianteModal({
       .slice(0, 8);
   }, [estudiantes, busqueda]);
 
-  const clubActualDelSeleccionado = estudianteSeleccionado
-    ? (clubPorEstudiante.get(estudianteSeleccionado.id) ?? null)
-    : null;
+  const clubActualDelSeleccionado = estudianteSeleccionado?.id_club != null ? clubesMap.get(estudianteSeleccionado.id_club) ?? null : null;
 
   async function handleConfirmar() {
     if (!estudianteId || !clubId) return;
     setIsPending(true);
     setError(null);
-    const res = await inscribirEstudiante({ estudianteId, clubId });
+    const res = await inscribirEstudiante({ estudianteId, clubId: Number(clubId) });
     setIsPending(false);
     if (!res.ok) {
       setError(res.error);
@@ -120,12 +117,12 @@ export function InscribirEstudianteModal({
                     </p>
                   ) : (
                     resultados.map((e) => {
-                      const clubNombre = clubPorEstudiante.get(e.id);
+                      const clubNombre = e.id_club != null ? clubesMap.get(e.id_club) : undefined;
                       return (
                         <button
-                          key={e.id}
+                          key={e.id_estudiante}
                           type="button"
-                          onClick={() => setEstudianteId(e.id)}
+                          onClick={() => setEstudianteId(e.id_estudiante)}
                           className="flex w-full items-center justify-between gap-2 border-b border-gray-100 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
                         >
                           <span>
@@ -133,7 +130,7 @@ export function InscribirEstudianteModal({
                               {e.nombre} {e.apellido}
                             </span>
                             <span className="text-xs text-gray-400 dark:text-gray-500">
-                              {e.curso} · {e.matricula}
+                              {e.curso ?? "Sin curso"} · {e.matricula}
                             </span>
                           </span>
                           {clubNombre && (
@@ -159,7 +156,7 @@ export function InscribirEstudianteModal({
                       {estudianteSeleccionado.nombre} {estudianteSeleccionado.apellido}
                     </span>{" "}
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                      · {estudianteSeleccionado.curso} · {estudianteSeleccionado.matricula}
+                      · {estudianteSeleccionado.curso ?? "Sin curso"} · {estudianteSeleccionado.matricula}
                     </span>
                   </span>
                 </span>
@@ -188,7 +185,7 @@ export function InscribirEstudianteModal({
               </SelectTrigger>
               <SelectContent>
                 {clubes.map((c) => (
-                  <SelectItem key={c.id} value={c.id} disabled={cupoDisponible(c) <= 0}>
+                  <SelectItem key={c.id_club} value={String(c.id_club)} disabled={cupoDisponible(c) <= 0}>
                     {c.nombre} ({cupoDisponible(c) > 0 ? `${cupoDisponible(c)} cupos` : "sin cupo"})
                   </SelectItem>
                 ))}

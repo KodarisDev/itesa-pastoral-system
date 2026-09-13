@@ -20,25 +20,35 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteUsuarioEncargado, resetPasswordEncargado } from "@/lib/actions/users.actions";
-import { TIPO_PERSONA_LABEL } from "@/lib/constants";
-import type { Club, Usuario } from "@/types";
+import type { Club, Encargado, Estudiante, Usuario } from "@/types";
 
 interface UsersManagementTableProps {
   encargados: Usuario[];
-  clubesMap: Map<string, Club>;
+  clubes: Club[];
+  encargosPorUsuario: Map<number, Encargado>;
+  estudiantesMap: Map<number, Estudiante>;
 }
 
 interface UserRowAccionesProps {
   usuario: Usuario;
   clubes: Club[];
+  clubActualId: number | null;
+  principalActual: boolean;
+  estudianteVinculado: Estudiante | null;
   onReset: (usuario: Usuario) => void;
-  onDelete: (usuarioId: string) => void;
+  onDelete: (usuarioId: number) => void;
 }
 
-function UserRowAcciones({ usuario, clubes, onReset, onDelete }: UserRowAccionesProps) {
+function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estudianteVinculado, onReset, onDelete }: UserRowAccionesProps) {
   return (
     <div className="flex items-center justify-end gap-1">
-      <EditEncargadoDialog usuario={usuario} clubes={clubes} />
+      <EditEncargadoDialog
+        usuario={usuario}
+        clubes={clubes}
+        clubActualId={clubActualId}
+        principalActual={principalActual}
+        estudianteVinculado={estudianteVinculado}
+      />
       <Button variant="ghost" size="icon" aria-label={`Restablecer contraseña de ${usuario.nombre}`} onClick={() => onReset(usuario)}>
         <KeyRound className="h-4 w-4" aria-hidden="true" />
       </Button>
@@ -55,7 +65,7 @@ function UserRowAcciones({ usuario, clubes, onReset, onDelete }: UserRowAcciones
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onDelete(usuario.id)}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={() => onDelete(usuario.id_usuario)}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -63,25 +73,25 @@ function UserRowAcciones({ usuario, clubes, onReset, onDelete }: UserRowAcciones
   );
 }
 
-export function UsersManagementTable({ encargados, clubesMap }: UsersManagementTableProps) {
+export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, estudiantesMap }: UsersManagementTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [nuevaPassword, setNuevaPassword] = useState<{ username: string; password: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
-  const clubes = Array.from(clubesMap.values());
+  const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
 
   function handleReset(usuario: Usuario) {
     startTransition(async () => {
-      const res = await resetPasswordEncargado(usuario.id);
+      const res = await resetPasswordEncargado(usuario.id_usuario);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
-      setNuevaPassword({ username: usuario.username, password: res.data.password });
+      setNuevaPassword({ username: usuario.usuario, password: res.data.password });
     });
   }
 
-  function handleDelete(usuarioId: string) {
+  function handleDelete(usuarioId: number) {
     startTransition(async () => {
       const res = await deleteUsuarioEncargado(usuarioId);
       if (!res.ok) {
@@ -110,25 +120,36 @@ export function UsersManagementTable({ encargados, clubesMap }: UsersManagementT
 
   return (
     <>
-      {/* Mobile: tarjetas — una tabla de 5 columnas no cabe cómodamente en pantallas chicas */}
+      {/* Mobile: tarjetas — una tabla de varias columnas no cabe cómodamente en pantallas chicas */}
       <div className="space-y-2 md:hidden">
-        {encargados.map((u) => (
-          <div key={u.id} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">{u.nombre}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">{u.username}</p>
+        {encargados.map((u) => {
+          const encargo = encargosPorUsuario.get(u.id_usuario);
+          const clubNombre = encargo ? clubesMap.get(encargo.id_club)?.nombre : undefined;
+          const estudiante = u.id_estudiante ? estudiantesMap.get(u.id_estudiante) ?? null : null;
+          return (
+            <div key={u.id_usuario} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">{u.nombre}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{u.usuario}</p>
+                </div>
+                {estudiante ? <Badge variant="secondary">Estudiante</Badge> : <Badge variant="secondary">Profesor</Badge>}
               </div>
-              <Badge variant="secondary">{TIPO_PERSONA_LABEL[u.tipoPersona ?? "estudiante"]}</Badge>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{clubNombre ?? "—"}</p>
+              <div className="mt-3 border-t border-gray-100 pt-3 dark:border-neutral-800">
+                <UserRowAcciones
+                  usuario={u}
+                  clubes={clubes}
+                  clubActualId={encargo?.id_club ?? null}
+                  principalActual={encargo?.encargado_principal ?? false}
+                  estudianteVinculado={estudiante}
+                  onReset={handleReset}
+                  onDelete={handleDelete}
+                />
+              </div>
             </div>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              {u.clubId ? clubesMap.get(u.clubId)?.nombre ?? "—" : "—"}
-            </p>
-            <div className="mt-3 border-t border-gray-100 pt-3 dark:border-neutral-800">
-              <UserRowAcciones usuario={u} clubes={clubes} onReset={handleReset} onDelete={handleDelete} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Desktop / tablet: tabla completa */}
@@ -138,27 +159,40 @@ export function UsersManagementTable({ encargados, clubesMap }: UsersManagementT
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Usuario</TableHead>
-              <TableHead>Tipo</TableHead>
               <TableHead>Club</TableHead>
+              <TableHead>Rol en el club</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {encargados.map((u) => (
-              <TableRow key={u.id}>
-                <TableCell className="font-medium text-gray-900 dark:text-white">{u.nombre}</TableCell>
-                <TableCell className="text-sm text-gray-600 dark:text-gray-400">{u.username}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{TIPO_PERSONA_LABEL[u.tipoPersona ?? "estudiante"]}</Badge>
-                </TableCell>
-                <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                  {u.clubId ? clubesMap.get(u.clubId)?.nombre ?? "—" : "—"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <UserRowAcciones usuario={u} clubes={clubes} onReset={handleReset} onDelete={handleDelete} />
-                </TableCell>
-              </TableRow>
-            ))}
+            {encargados.map((u) => {
+              const encargo = encargosPorUsuario.get(u.id_usuario);
+              const clubNombre = encargo ? clubesMap.get(encargo.id_club)?.nombre : undefined;
+              const estudiante = u.id_estudiante ? estudiantesMap.get(u.id_estudiante) ?? null : null;
+              return (
+                <TableRow key={u.id_usuario}>
+                  <TableCell className="font-medium text-gray-900 dark:text-white">{u.nombre}</TableCell>
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">{u.usuario}</TableCell>
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">{clubNombre ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={encargo?.encargado_principal ? "brand" : "outline"}>
+                      {encargo?.encargado_principal ? "Principal" : "Secundario"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <UserRowAcciones
+                      usuario={u}
+                      clubes={clubes}
+                      clubActualId={encargo?.id_club ?? null}
+                      principalActual={encargo?.encargado_principal ?? false}
+                      estudianteVinculado={estudiante}
+                      onReset={handleReset}
+                      onDelete={handleDelete}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

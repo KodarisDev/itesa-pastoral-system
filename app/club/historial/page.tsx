@@ -3,25 +3,17 @@ import { auth } from "@/lib/auth";
 import { AttendanceHistoryTable } from "@/components/club/AttendanceHistoryTable";
 import { ExportAsistenciaModal } from "@/components/shared/ExportAsistenciaModal";
 import { getClubById } from "@/lib/db/clubes";
-import { getEstudiantesByIds } from "@/lib/db/estudiantes";
-import { getAsistenciasByClub } from "@/lib/db/asistencias";
-import { getOpcionesFiltro } from "@/lib/reportes/asistencia";
+import { getSesionesEnriquecidas } from "@/lib/reportes/asistencia";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClubHistorialPage() {
   const session = await auth();
-  if (!session?.user.clubId) redirect("/login");
+  const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
+  if (!idClub) redirect("/login");
 
-  const club = await getClubById(session.user.clubId);
+  const [club, sesiones] = await Promise.all([getClubById(idClub), getSesionesEnriquecidas({ clubId: idClub })]);
   if (!club) redirect("/login");
-
-  const [sesiones, miembros, opciones] = await Promise.all([
-    getAsistenciasByClub(club.id),
-    getEstudiantesByIds(club.miembrosActuales),
-    getOpcionesFiltro(club.id),
-  ]);
-  const estudiantesMap = new Map(miembros.map((e) => [e.id, e]));
 
   return (
     <div className="space-y-6">
@@ -30,9 +22,9 @@ export default async function ClubHistorialPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Historial de asistencia</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{club.nombre}</p>
         </div>
-        <ExportAsistenciaModal scope="encargado" ciclos={opciones.ciclos} anios={opciones.anios} />
+        <ExportAsistenciaModal scope="encargado" />
       </div>
-      <AttendanceHistoryTable sesiones={sesiones} estudiantesMap={estudiantesMap} />
+      <AttendanceHistoryTable sesiones={sesiones} />
     </div>
   );
 }

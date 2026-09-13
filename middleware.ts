@@ -7,7 +7,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const rol = req.auth?.user?.rol;
+  const rolNombre = req.auth?.user?.rolNombre;
   const { pathname } = req.nextUrl;
 
   if (!req.auth) {
@@ -16,11 +16,11 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname.startsWith("/admin") && rol !== "pastoral") {
+  if (pathname.startsWith("/admin") && rolNombre !== "pastoral" && rolNombre !== "admin") {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (pathname.startsWith("/club") && rol !== "encargado_club") {
+  if (pathname.startsWith("/club") && rolNombre !== "encargado_club") {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 

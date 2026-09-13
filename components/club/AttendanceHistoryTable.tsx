@@ -6,20 +6,14 @@ import { es } from "date-fns/locale";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import type { Estudiante, SesionAsistencia } from "@/types";
+import type { SesionEnriquecida } from "@/lib/reportes/asistencia";
 
 interface AttendanceHistoryTableProps {
-  sesiones: SesionAsistencia[];
-  estudiantesMap: Map<string, Estudiante>;
+  sesiones: SesionEnriquecida[];
 }
 
-export function AttendanceHistoryTable({ sesiones, estudiantesMap }: AttendanceHistoryTableProps) {
+export function AttendanceHistoryTable({ sesiones }: AttendanceHistoryTableProps) {
   const [busqueda, setBusqueda] = useState("");
-
-  const nombreCompleto = (estudianteId: string) => {
-    const est = estudiantesMap.get(estudianteId);
-    return est ? `${est.nombre} ${est.apellido}` : estudianteId;
-  };
 
   const filtradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -27,14 +21,10 @@ export function AttendanceHistoryTable({ sesiones, estudiantesMap }: AttendanceH
     return sesiones
       .map((sesion) => ({
         ...sesion,
-        registros: sesion.registros.filter((r) => {
-          const est = estudiantesMap.get(r.estudianteId);
-          const nombre = est ? `${est.nombre} ${est.apellido}` : r.estudianteId;
-          return `${nombre} ${est?.matricula ?? ""}`.toLowerCase().includes(q);
-        }),
+        registros: sesion.registros.filter((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q)),
       }))
       .filter((sesion) => sesion.registros.length > 0);
-  }, [sesiones, busqueda, estudiantesMap]);
+  }, [sesiones, busqueda]);
 
   if (sesiones.length === 0) {
     return (
@@ -62,36 +52,33 @@ export function AttendanceHistoryTable({ sesiones, estudiantesMap }: AttendanceH
         </div>
       ) : (
         <div className="space-y-2">
-          {filtradas.map((sesion) => {
-            const presentes = sesion.registros.filter((r) => r.presente).length;
-            return (
-              <details key={sesion.id} open={busqueda.trim() !== ""} className="group rounded-2xl border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {format(new Date(sesion.fecha), "EEEE d 'de' MMMM yyyy", { locale: es })}
-                  </span>
-                  <Badge variant={presentes === sesion.registros.length ? "success" : "secondary"}>
-                    {presentes} / {sesion.registros.length} presentes
-                  </Badge>
-                </summary>
-                <div className="divide-y divide-gray-100 border-t border-gray-100 px-4 dark:divide-neutral-800 dark:border-neutral-800">
-                  {sesion.registros.map((r) => (
-                    <div key={r.estudianteId} className="py-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">{nombreCompleto(r.estudianteId)}</span>
-                        <Badge variant={r.presente ? "success" : "destructive"}>
-                          {r.presente ? "Presente" : "Ausente"}
-                        </Badge>
-                      </div>
-                      {!r.presente && r.justificacion && (
-                        <p className="mt-1 text-xs italic text-gray-500 dark:text-gray-400">&ldquo;{r.justificacion}&rdquo;</p>
-                      )}
+          {filtradas.map((sesion) => (
+            <details key={sesion.sesionId} open={busqueda.trim() !== ""} className="group rounded-2xl border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {format(new Date(`${sesion.fecha}T00:00:00`), "EEEE d 'de' MMMM yyyy", { locale: es })}
+                </span>
+                <Badge variant={sesion.presentes === sesion.total ? "success" : "secondary"}>
+                  {sesion.presentes} / {sesion.total} presentes
+                </Badge>
+              </summary>
+              <div className="divide-y divide-gray-100 border-t border-gray-100 px-4 dark:divide-neutral-800 dark:border-neutral-800">
+                {sesion.registros.map((r) => (
+                  <div key={r.estudianteId} className="py-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-300">{r.nombreCompleto}</span>
+                      <Badge variant={r.presente ? "success" : "destructive"}>
+                        {r.presente ? "Presente" : "Ausente"}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              </details>
-            );
-          })}
+                    {!r.presente && r.justificacion && (
+                      <p className="mt-1 text-xs italic text-gray-500 dark:text-gray-400">&ldquo;{r.justificacion}&rdquo;</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
+          ))}
         </div>
       )}
     </div>

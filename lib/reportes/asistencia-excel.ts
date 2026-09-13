@@ -14,8 +14,6 @@ const AUSENTE_TEXT = "FFB91C1C";
 
 const DETAIL_COLUMNS = [
   { header: "Fecha", key: "fecha", width: 14 },
-  { header: "Ciclo", key: "ciclo", width: 9 },
-  { header: "Año escolar", key: "anio", width: 12 },
   { header: "Estudiante", key: "estudiante", width: 30 },
   { header: "Curso", key: "curso", width: 12 },
   { header: "Matrícula", key: "matricula", width: 14 },
@@ -183,25 +181,23 @@ export async function generarExcelAsistencia(
         const row = ws.getRow(fila);
         row.getCell(1).value = new Date(`${sesion.fecha}T00:00:00`);
         row.getCell(1).numFmt = "dd/mm/yyyy";
-        row.getCell(2).value = sesion.cicloNumero ?? "—";
-        row.getCell(3).value = sesion.anioEscolar;
-        row.getCell(4).value = registro.nombreCompleto;
-        row.getCell(5).value = registro.curso;
-        row.getCell(6).value = registro.matricula;
-        row.getCell(7).value = registro.presente ? "Presente" : "Ausente";
-        row.getCell(7).fill = {
+        row.getCell(2).value = registro.nombreCompleto;
+        row.getCell(3).value = registro.curso;
+        row.getCell(4).value = registro.matricula;
+        row.getCell(5).value = registro.presente ? "Presente" : "Ausente";
+        row.getCell(5).fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: registro.presente ? PRESENTE_BG : AUSENTE_BG },
         };
-        row.getCell(7).font = { color: { argb: registro.presente ? PRESENTE_TEXT : AUSENTE_TEXT }, bold: true };
-        row.getCell(7).alignment = { horizontal: "center" };
-        row.getCell(8).value = registro.presente ? "" : registro.justificacion ?? "";
-        row.getCell(9).value = sesion.tomadaPorNombre;
+        row.getCell(5).font = { color: { argb: registro.presente ? PRESENTE_TEXT : AUSENTE_TEXT }, bold: true };
+        row.getCell(5).alignment = { horizontal: "center" };
+        row.getCell(6).value = registro.presente ? "" : registro.justificacion ?? "";
+        row.getCell(7).value = sesion.tomadaPorNombre;
 
         if (fila % 2 === 0) {
           for (let col = 1; col <= DETAIL_COLUMNS.length; col += 1) {
-            if (col === 7) continue;
+            if (col === 5) continue;
             row.getCell(col).fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA } };
           }
         }

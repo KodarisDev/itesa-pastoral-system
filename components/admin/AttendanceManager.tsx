@@ -14,14 +14,11 @@ import type { SesionEnriquecida } from "@/lib/reportes/asistencia";
 
 interface AttendanceManagerProps {
   sesiones: SesionEnriquecida[];
-  clubes: { id: string; nombre: string }[];
-  ciclos: number[];
-  anios: string[];
+  clubes: { id: number; nombre: string }[];
 }
 
-export function AttendanceManager({ sesiones, clubes, ciclos, anios }: AttendanceManagerProps) {
+export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) {
   const [clubId, setClubId] = useState("todos");
-  const [ciclo, setCiclo] = useState("todos");
   const [estudianteQuery, setEstudianteQuery] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -30,8 +27,7 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
     const q = estudianteQuery.trim().toLowerCase();
     return sesiones
       .filter((s) => {
-        if (clubId !== "todos" && s.clubId !== clubId) return false;
-        if (ciclo !== "todos" && String(s.cicloNumero) !== ciclo) return false;
+        if (clubId !== "todos" && String(s.clubId) !== clubId) return false;
         if (desde && s.fecha < desde) return false;
         if (hasta && s.fecha > hasta) return false;
         if (q && !s.registros.some((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q))) return false;
@@ -42,7 +38,7 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
         const registros = s.registros.filter((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q));
         return { ...s, registros, presentes: registros.filter((r) => r.presente).length, total: registros.length };
       });
-  }, [sesiones, clubId, ciclo, estudianteQuery, desde, hasta]);
+  }, [sesiones, clubId, estudianteQuery, desde, hasta]);
 
   const totalPresentes = filtradas.reduce((acc, s) => acc + s.presentes, 0);
   const totalRegistros = filtradas.reduce((acc, s) => acc + s.total, 0);
@@ -58,7 +54,7 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
             Consulta la asistencia registrada por todos los clubes y exporta los datos que necesites.
           </p>
         </div>
-        <ExportAsistenciaModal scope="admin" clubes={clubes} ciclos={ciclos} anios={anios} />
+        <ExportAsistenciaModal scope="admin" clubes={clubes} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -68,7 +64,7 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
         <StatCard label="Registros totales" value={totalRegistros} icon={CalendarCheck} accent="neutral" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3 lg:grid-cols-4">
         <div>
           <Label htmlFor="filtro-club" className="text-xs">
             Club
@@ -80,26 +76,8 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
               {clubes.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
+                <SelectItem key={c.id} value={String(c.id)}>
                   {c.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="filtro-ciclo" className="text-xs">
-            Ciclo
-          </Label>
-          <Select value={ciclo} onValueChange={setCiclo}>
-            <SelectTrigger id="filtro-ciclo">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              {ciclos.map((c) => (
-                <SelectItem key={c} value={String(c)}>
-                  Ciclo #{c}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -151,7 +129,6 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
                     {format(new Date(`${sesion.fecha}T00:00:00`), "EEEE d 'de' MMMM yyyy", { locale: es })}
                   </span>
                   <Badge variant="brand">{sesion.clubNombre}</Badge>
-                  {sesion.cicloNumero != null && <Badge variant="outline">Ciclo #{sesion.cicloNumero}</Badge>}
                 </div>
                 <Badge variant={sesion.presentes === sesion.total ? "success" : "secondary"}>
                   {sesion.presentes} / {sesion.total} presentes
@@ -160,7 +137,6 @@ export function AttendanceManager({ sesiones, clubes, ciclos, anios }: Attendanc
               <div className="divide-y divide-gray-100 border-t border-gray-100 px-4 dark:divide-neutral-800 dark:border-neutral-800">
                 <div className="flex items-center justify-between py-2 text-xs text-gray-400 dark:text-gray-500">
                   <span>Tomada por {sesion.tomadaPorNombre}</span>
-                  <span>{sesion.anioEscolar}</span>
                 </div>
                 {sesion.registros.map((r) => (
                   <div key={r.estudianteId} className="py-2">

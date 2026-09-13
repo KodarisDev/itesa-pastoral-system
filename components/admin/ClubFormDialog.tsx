@@ -18,28 +18,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { clubSchema } from "@/lib/validations/club.schema";
+import { clubSchema, clubCreateSchema } from "@/lib/validations/club.schema";
 import { createClub, updateClub } from "@/lib/actions/clubs.actions";
-import { TIPO_PERSONA_LABEL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Club, Usuario } from "@/types";
 
 interface ClubFormDialogProps {
   mode: "crear" | "editar";
   club?: Club;
+  encargadoPrincipalId?: number | null;
   encargados: Usuario[];
   trigger: ReactNode;
 }
 
-export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDialogProps) {
+export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, trigger }: ClubFormDialogProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [encargadoId, setEncargadoId] = useState(club?.encargadoUsuarioId ?? "");
-
-  const disponibles = encargados.filter((u) => !u.clubId || u.clubId === club?.id);
+  const [encargadoId, setEncargadoId] = useState(encargadoPrincipalId ? String(encargadoPrincipalId) : "");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,18 +45,17 @@ export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDial
     const raw = {
       nombre: formData.get("nombre"),
       descripcion: formData.get("descripcion"),
-      capacidadMaxima: formData.get("capacidadMaxima"),
-      duracionMeses: formData.get("duracionMeses"),
-      encargadoUsuarioId: encargadoId || null,
+      capacidad: formData.get("capacidadMaxima"),
+      encargadoPrincipalId: encargadoId || null,
     };
-    const parsed = clubSchema.safeParse(raw);
+    const parsed = (mode === "crear" ? clubCreateSchema : clubSchema).safeParse(raw);
     if (!parsed.success) {
       const flat = parsed.error.flatten().fieldErrors;
       setFieldErrors({
         nombre: flat.nombre?.[0] ?? "",
         descripcion: flat.descripcion?.[0] ?? "",
-        capacidadMaxima: flat.capacidadMaxima?.[0] ?? "",
-        duracionMeses: flat.duracionMeses?.[0] ?? "",
+        capacidad: flat.capacidad?.[0] ?? "",
+        encargadoPrincipalId: flat.encargadoPrincipalId?.[0] ?? "",
       });
       return;
     }
@@ -66,7 +63,7 @@ export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDial
     formData.set("encargadoUsuarioId", encargadoId);
 
     startTransition(async () => {
-      const res = mode === "crear" ? await createClub(formData) : await updateClub(club!.id, formData);
+      const res = mode === "crear" ? await createClub(formData) : await updateClub(club!.id_club, formData);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -85,7 +82,7 @@ export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDial
           <DialogTitle>{mode === "crear" ? "Nuevo club" : `Editar ${club?.nombre}`}</DialogTitle>
           <DialogDescription>
             {mode === "crear"
-              ? "Completa la información del club. Podrás asignar un encargado después de crear su usuario en Encargados."
+              ? "Completa la información del club. Todo club debe tener un encargado — créalo primero en Encargados si todavía no existe."
               : "Actualiza la información del club."}
           </DialogDescription>
         </DialogHeader>
@@ -107,7 +104,7 @@ export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDial
               <Textarea
                 id="descripcion"
                 name="descripcion"
-                defaultValue={club?.descripcion}
+                defaultValue={club?.descripcion ?? ""}
                 invalid={!!fieldErrors.descripcion}
                 placeholder="¿De qué trata este club?"
               />
@@ -118,40 +115,21 @@ export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDial
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="capacidadMaxima">Cupo máximo</Label>
-                <Input
-                  id="capacidadMaxima"
-                  name="capacidadMaxima"
-                  type="number"
-                  min={1}
-                  defaultValue={club?.capacidadMaxima}
-                  invalid={!!fieldErrors.capacidadMaxima}
-                />
-                {fieldErrors.capacidadMaxima && (
-                  <p role="alert" className="mt-1.5 text-sm text-destructive">
-                    {fieldErrors.capacidadMaxima}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="duracionMeses">Duración (meses)</Label>
-                <Input
-                  id="duracionMeses"
-                  name="duracionMeses"
-                  type="number"
-                  min={1}
-                  max={12}
-                  defaultValue={club?.duracionMeses}
-                  invalid={!!fieldErrors.duracionMeses}
-                />
-                {fieldErrors.duracionMeses && (
-                  <p role="alert" className="mt-1.5 text-sm text-destructive">
-                    {fieldErrors.duracionMeses}
-                  </p>
-                )}
-              </div>
+            <div>
+              <Label htmlFor="capacidadMaxima">Cupo máximo</Label>
+              <Input
+                id="capacidadMaxima"
+                name="capacidadMaxima"
+                type="number"
+                min={1}
+                defaultValue={club?.capacidad ?? undefined}
+                invalid={!!fieldErrors.capacidad}
+              />
+              {fieldErrors.capacidad && (
+                <p role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.capacidad}
+                </p>
+              )}
             </div>
 
             <div>
@@ -169,23 +147,31 @@ export function ClubFormDialog({ mode, club, encargados, trigger }: ClubFormDial
             </div>
 
             <div>
-              <Label htmlFor="encargadoUsuarioId">Encargado del club</Label>
+              <Label htmlFor="encargadoUsuarioId">Encargado principal{mode === "crear" && " *"}</Label>
               <Select value={encargadoId || "none"} onValueChange={(v) => setEncargadoId(v === "none" ? "" : v)}>
-                <SelectTrigger id="encargadoUsuarioId">
-                  <SelectValue placeholder="Sin encargado asignado" />
+                <SelectTrigger id="encargadoUsuarioId" invalid={!!fieldErrors.encargadoPrincipalId}>
+                  <SelectValue placeholder="Selecciona un encargado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sin encargado asignado</SelectItem>
-                  {disponibles.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.nombre} ({TIPO_PERSONA_LABEL[u.tipoPersona ?? "estudiante"]})
+                  {mode === "editar" && <SelectItem value="none">Sin encargado asignado</SelectItem>}
+                  {encargados.map((u) => (
+                    <SelectItem key={u.id_usuario} value={String(u.id_usuario)}>
+                      {u.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                Para crear un encargado nuevo, ve a la sección Encargados.
-              </p>
+              {fieldErrors.encargadoPrincipalId ? (
+                <p role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.encargadoPrincipalId}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  {mode === "crear"
+                    ? "¿No aparece quién buscas? Créalo primero en la sección Encargados."
+                    : "Para agregar un encargado secundario o crear uno nuevo, ve a la sección Encargados."}
+                </p>
+              )}
             </div>
           </div>
 

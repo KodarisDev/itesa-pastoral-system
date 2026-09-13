@@ -1,38 +1,40 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
-import { usuarioEncargadoSchema, usuarioEncargadoUpdateSchema } from "@/lib/validations/usuario.schema";
+import {
+  usuarioEncargadoSchema,
+  usuarioEncargadoUpdateSchema,
+  usuarioAdminSchema,
+  usuarioAdminUpdateSchema,
+} from "@/lib/validations/usuario.schema";
 import {
   getUsuarioByUsername,
   getUsuarioById,
-  saveUsuario,
-  deleteUsuario as dbDeleteUsuario,
+  crearUsuario,
+  actualizarUsuario,
+  eliminarUsuario as dbEliminarUsuario,
   hashPassword,
 } from "@/lib/db/usuarios";
-import { getClubById, saveClub } from "@/lib/db/clubes";
-import { generarId, generarPassword } from "@/lib/utils";
+import { getClubById, agregarEncargado, quitarEncargado, getClubesDeUsuario } from "@/lib/db/clubes";
+import { getEstudianteByMatricula, actualizarEstudiante } from "@/lib/db/estudiantes";
+import { getRoles, guardarPermisosDeUsuario } from "@/lib/db/roles";
+import { generarPassword } from "@/lib/utils";
+import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
-
-async function requirePastoral() {
-  const session = await auth();
-  if (!session || session.user.rol !== "pastoral") {
-    throw new Error("No tienes permiso para realizar esta acción.");
-  }
-  return session;
-}
 
 export async function createUsuarioEncargado(formData: FormData): Promise<
   ActionResult<{ username: string; password: string }>
 > {
   try {
-    await requirePastoral();
+    await requirePermiso("usuarios:gestionar");
 
     const parsed = usuarioEncargadoSchema.safeParse({
       nombre: formData.get("nombre"),
       username: formData.get("username"),
-      tipoPersona: formData.get("tipoPersona"),
+      idRol: formData.get("idRol"),
       clubId: formData.get("clubId"),
+      principal: formData.get("principal") === "true",
+      matriculaEstudiante: formData.get("matriculaEstudiante") ?? "",
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
@@ -43,39 +45,51 @@ export async function createUsuarioEncargado(formData: FormData): Promise<
       return actionError("Ese nombre de usuario ya está en uso, elige otro.");
     }
 
-    const club = await getClubById(parsed.data.clubId);
-    if (!club) return actionError("El club seleccionado no existe.");
+    if (parsed.data.clubId) {
+      const club = await getClubById(parsed.data.clubId);
+      if (!club) return actionError("El club seleccionado no existe.");
+    }
+
+    let idEstudiante: number | null = null;
+    if (parsed.data.matriculaEstudiante) {
+      const estudiante = await getEstudianteByMatricula(parsed.data.matriculaEstudiante);
+      if (!estudiante) return actionError("No se encontró ningún estudiante con esa matrícula.");
+      idEstudiante = estudiante.id_estudiante;
+    }
 
     const password = generarPassword();
-    const id = generarId("usr");
 
-    await saveUsuario({
-      id,
+    const usuario = await crearUsuario({
+      id_rol: parsed.data.idRol,
+      id_estudiante: idEstudiante,
       nombre: parsed.data.nombre,
-      username: parsed.data.username,
-      passwordHash: hashPassword(password),
-      rol: "encargado_club",
-      tipoPersona: parsed.data.tipoPersona,
-      clubId: parsed.data.clubId,
+      usuario: parsed.data.username,
+      password_hash: hashPassword(password),
+      activo: true,
     });
 
-    if (club.encargadoUsuarioId && club.encargadoUsuarioId !== id) {
-      const anterior = await getUsuarioById(club.encargadoUsuarioId);
-      if (anterior) await saveUsuario({ ...anterior, clubId: undefined });
+    // El club es opcional al crear: puede asignarse después desde Editar.
+    if (parsed.data.clubId) {
+      await agregarEncargado(parsed.data.clubId, usuario.id_usuario, !!parsed.data.principal);
     }
-    await saveClub({ ...club, encargadoUsuarioId: id });
+
+    // El estudiante-encargado pertenece a su propio club (no se agrega aparte).
+    if (idEstudiante && parsed.data.clubId) {
+      await actualizarEstudiante(idEstudiante, { id_club: parsed.data.clubId });
+    }
 
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
+    revalidatePath("/admin/estudiantes");
     return actionOk({ username: parsed.data.username, password });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el usuario.");
   }
 }
 
-export async function updateUsuarioEncargado(usuarioId: string, formData: FormData): Promise<ActionResult> {
+export async function updateUsuarioEncargado(usuarioId: number, formData: FormData): Promise<ActionResult> {
   try {
-    await requirePastoral();
+    await requirePermiso("usuarios:gestionar");
 
     const usuario = await getUsuarioById(usuarioId);
     if (!usuario) return actionError("El usuario no existe.");
@@ -83,8 +97,10 @@ export async function updateUsuarioEncargado(usuarioId: string, formData: FormDa
     const parsed = usuarioEncargadoUpdateSchema.safeParse({
       nombre: formData.get("nombre"),
       username: formData.get("username"),
-      tipoPersona: formData.get("tipoPersona"),
+      idRol: formData.get("idRol"),
       clubId: formData.get("clubId"),
+      principal: formData.get("principal") === "true",
+      matriculaEstudiante: formData.get("matriculaEstudiante") ?? "",
       password: formData.get("password") ?? "",
     });
     if (!parsed.success) {
@@ -92,80 +108,167 @@ export async function updateUsuarioEncargado(usuarioId: string, formData: FormDa
     }
 
     const existente = await getUsuarioByUsername(parsed.data.username);
-    if (existente && existente.id !== usuarioId) {
+    if (existente && existente.id_usuario !== usuarioId) {
       return actionError("Ese nombre de usuario ya está en uso, elige otro.");
     }
 
-    const clubNuevo = await getClubById(parsed.data.clubId);
-    if (!clubNuevo) return actionError("El club seleccionado no existe.");
+    if (parsed.data.clubId) {
+      const clubNuevo = await getClubById(parsed.data.clubId);
+      if (!clubNuevo) return actionError("El club seleccionado no existe.");
+    }
 
-    const clubAnteriorId = usuario.clubId;
+    let idEstudiante = usuario.id_estudiante;
+    if (parsed.data.matriculaEstudiante) {
+      const estudiante = await getEstudianteByMatricula(parsed.data.matriculaEstudiante);
+      if (!estudiante) return actionError("No se encontró ningún estudiante con esa matrícula.");
+      idEstudiante = estudiante.id_estudiante;
+    } else {
+      idEstudiante = null;
+    }
 
-    await saveUsuario({
-      ...usuario,
+    await actualizarUsuario(usuarioId, {
       nombre: parsed.data.nombre,
-      username: parsed.data.username,
-      tipoPersona: parsed.data.tipoPersona,
-      clubId: parsed.data.clubId,
-      passwordHash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.passwordHash,
+      usuario: parsed.data.username,
+      id_rol: parsed.data.idRol,
+      id_estudiante: idEstudiante,
+      password_hash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.password_hash,
     });
 
-    if (clubAnteriorId && clubAnteriorId !== parsed.data.clubId) {
-      const clubAnterior = await getClubById(clubAnteriorId);
-      if (clubAnterior && clubAnterior.encargadoUsuarioId === usuarioId) {
-        await saveClub({ ...clubAnterior, encargadoUsuarioId: null });
+    // Sin club nuevo: se quita de cualquier club que dirigiera (queda "sin asignar").
+    const clubesActuales = await getClubesDeUsuario(usuarioId);
+    for (const encargo of clubesActuales) {
+      if (encargo.id_club !== parsed.data.clubId) await quitarEncargado(encargo.id_club, usuarioId);
+    }
+    if (parsed.data.clubId) {
+      const yaEnClubNuevo = clubesActuales.some((e) => e.id_club === parsed.data.clubId);
+      if (!yaEnClubNuevo) {
+        await agregarEncargado(parsed.data.clubId, usuarioId, !!parsed.data.principal);
       }
     }
 
-    if (clubNuevo.encargadoUsuarioId && clubNuevo.encargadoUsuarioId !== usuarioId) {
-      const encargadoAnteriorDelClub = await getUsuarioById(clubNuevo.encargadoUsuarioId);
-      if (encargadoAnteriorDelClub) await saveUsuario({ ...encargadoAnteriorDelClub, clubId: undefined });
-    }
-    if (clubNuevo.encargadoUsuarioId !== usuarioId) {
-      await saveClub({ ...clubNuevo, encargadoUsuarioId: usuarioId });
+    if (idEstudiante) {
+      await actualizarEstudiante(idEstudiante, { id_club: parsed.data.clubId ?? null });
     }
 
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
+    revalidatePath("/admin/estudiantes");
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo actualizar el usuario.");
   }
 }
 
-export async function deleteUsuarioEncargado(usuarioId: string): Promise<ActionResult> {
+export async function deleteUsuarioEncargado(usuarioId: number): Promise<ActionResult> {
   try {
-    await requirePastoral();
+    await requirePermiso("usuarios:gestionar");
     const usuario = await getUsuarioById(usuarioId);
     if (!usuario) return actionError("El usuario no existe.");
-    if (usuario.rol !== "encargado_club") {
-      return actionError("Solo se pueden eliminar cuentas de encargados de club.");
+
+    if (usuario.id_estudiante) {
+      await actualizarEstudiante(usuario.id_estudiante, { id_club: null });
     }
-    if (usuario.clubId) {
-      const club = await getClubById(usuario.clubId);
-      if (club && club.encargadoUsuarioId === usuario.id) {
-        await saveClub({ ...club, encargadoUsuarioId: null });
-      }
-    }
-    await dbDeleteUsuario(usuarioId);
+    await dbEliminarUsuario(usuarioId);
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
+    revalidatePath("/admin/estudiantes");
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo eliminar el usuario.");
   }
 }
 
-export async function resetPasswordEncargado(usuarioId: string): Promise<ActionResult<{ password: string }>> {
+export async function resetPasswordEncargado(usuarioId: number): Promise<ActionResult<{ password: string }>> {
   try {
-    await requirePastoral();
+    await requirePermiso("usuarios:gestionar");
     const usuario = await getUsuarioById(usuarioId);
     if (!usuario) return actionError("El usuario no existe.");
     const password = generarPassword();
-    await saveUsuario({ ...usuario, passwordHash: hashPassword(password) });
+    await actualizarUsuario(usuarioId, { password_hash: hashPassword(password) });
     revalidatePath("/admin/usuarios");
     return actionOk({ password });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo restablecer la contraseña.");
+  }
+}
+
+async function idRolAdmin(): Promise<number> {
+  const roles = await getRoles();
+  const id = roles.find((r) => r.nombre === "admin")?.id_rol;
+  if (!id) throw new Error('El rol "admin" no existe todavía en la base de datos.');
+  return id;
+}
+
+export async function createUsuarioAdmin(formData: FormData): Promise<
+  ActionResult<{ username: string; password: string }>
+> {
+  try {
+    await requirePermiso("usuarios:gestionar");
+
+    const parsed = usuarioAdminSchema.safeParse({
+      nombre: formData.get("nombre"),
+      username: formData.get("username"),
+      permisos: formData.getAll("permisos"),
+    });
+    if (!parsed.success) {
+      return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
+    }
+
+    const existente = await getUsuarioByUsername(parsed.data.username);
+    if (existente) {
+      return actionError("Ese nombre de usuario ya está en uso, elige otro.");
+    }
+
+    const password = generarPassword();
+    const usuario = await crearUsuario({
+      id_rol: await idRolAdmin(),
+      id_estudiante: null,
+      nombre: parsed.data.nombre,
+      usuario: parsed.data.username,
+      password_hash: hashPassword(password),
+      activo: true,
+    });
+    await guardarPermisosDeUsuario(usuario.id_usuario, parsed.data.permisos);
+
+    revalidatePath("/admin/usuarios");
+    return actionOk({ username: parsed.data.username, password });
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo crear el administrador.");
+  }
+}
+
+export async function updateUsuarioAdmin(usuarioId: number, formData: FormData): Promise<ActionResult> {
+  try {
+    await requirePermiso("usuarios:gestionar");
+
+    const usuario = await getUsuarioById(usuarioId);
+    if (!usuario) return actionError("El usuario no existe.");
+
+    const parsed = usuarioAdminUpdateSchema.safeParse({
+      nombre: formData.get("nombre"),
+      username: formData.get("username"),
+      permisos: formData.getAll("permisos"),
+      password: formData.get("password") ?? "",
+    });
+    if (!parsed.success) {
+      return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
+    }
+
+    const existente = await getUsuarioByUsername(parsed.data.username);
+    if (existente && existente.id_usuario !== usuarioId) {
+      return actionError("Ese nombre de usuario ya está en uso, elige otro.");
+    }
+
+    await actualizarUsuario(usuarioId, {
+      nombre: parsed.data.nombre,
+      usuario: parsed.data.username,
+      password_hash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.password_hash,
+    });
+    await guardarPermisosDeUsuario(usuarioId, parsed.data.permisos);
+
+    revalidatePath("/admin/usuarios");
+    return actionOk(undefined);
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo actualizar el administrador.");
   }
 }

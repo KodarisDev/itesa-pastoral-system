@@ -22,11 +22,11 @@ export function MembersList({ miembros }: { miembros: Estudiante[] }) {
         </TableHeader>
         <TableBody>
           {miembros.map((m) => (
-            <TableRow key={m.id}>
+            <TableRow key={m.id_estudiante}>
               <TableCell className="font-medium text-gray-900 dark:text-white">
                 {m.nombre} {m.apellido}
               </TableCell>
-              <TableCell className="text-sm text-gray-600 dark:text-gray-400">{m.curso}</TableCell>
+              <TableCell className="text-sm text-gray-600 dark:text-gray-400">{m.curso ?? "—"}</TableCell>
               <TableCell className="text-sm text-gray-600 dark:text-gray-400">{m.matricula}</TableCell>
             </TableRow>
           ))}

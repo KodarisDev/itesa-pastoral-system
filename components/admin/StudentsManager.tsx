@@ -3,36 +3,25 @@
 import { useState } from "react";
 import { StudentsTable } from "@/components/admin/StudentsTable";
 import { StudentDetailModal } from "@/components/admin/StudentDetailModal";
-import type { Club, Estudiante, HistorialClub } from "@/types";
+import type { Club, Estudiante } from "@/types";
 
 interface StudentsManagerProps {
   estudiantes: Estudiante[];
   clubes: Club[];
-  clubPorEstudiante: Map<string, string>;
-  historial: HistorialClub[];
   initialMatricula?: string;
 }
 
-export function StudentsManager({ estudiantes, clubes, clubPorEstudiante, historial, initialMatricula }: StudentsManagerProps) {
+export function StudentsManager({ estudiantes, clubes, initialMatricula }: StudentsManagerProps) {
   const initial = initialMatricula ? (estudiantes.find((e) => e.matricula === initialMatricula) ?? null) : null;
-  const [selectedId, setSelectedId] = useState<string | null>(initial?.id ?? null);
+  const [selectedId, setSelectedId] = useState<number | null>(initial?.id_estudiante ?? null);
 
-  const estudiante = estudiantes.find((e) => e.id === selectedId) ?? null;
-  const historialEstudiante = estudiante
-    ? historial
-        .filter((h) => h.estudianteId === estudiante.id)
-        .sort((a, b) => b.fechaFin.localeCompare(a.fechaFin))
-    : [];
+  const estudiante = estudiantes.find((e) => e.id_estudiante === selectedId) ?? null;
+  const clubNombre = estudiante?.id_club != null ? clubes.find((c) => c.id_club === estudiante.id_club)?.nombre ?? null : null;
 
   return (
     <>
-      <StudentsTable estudiantes={estudiantes} clubes={clubes} clubPorEstudiante={clubPorEstudiante} onSelect={(e) => setSelectedId(e.id)} />
-      <StudentDetailModal
-        estudiante={estudiante}
-        clubActualNombre={estudiante ? (clubPorEstudiante.get(estudiante.id) ?? null) : null}
-        historial={historialEstudiante}
-        onClose={() => setSelectedId(null)}
-      />
+      <StudentsTable estudiantes={estudiantes} clubes={clubes} onSelect={(e) => setSelectedId(e.id_estudiante)} />
+      <StudentDetailModal estudiante={estudiante} clubActualNombre={clubNombre} onClose={() => setSelectedId(null)} />
     </>
   );
 }

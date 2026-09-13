@@ -1,17 +1,19 @@
-export interface CicloClub {
-  numero: number;
-  fechaInicio: string; // ISO date
-  anioEscolar: string;
+export interface Club {
+  id_club: number;
+  nombre: string;
+  descripcion: string | null;
+  capacidad: number | null;
+  foto: string | null;
 }
 
-export interface Club {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  fotoUrl: string | null;
-  capacidadMaxima: number;
-  duracionMeses: number;
-  encargadoUsuarioId: string | null;
-  cicloActual: CicloClub;
-  miembrosActuales: string[]; // Estudiante.id[]
+export interface Encargado {
+  id_encargado: number;
+  id_club: number;
+  id_usuario: number;
+  encargado_principal: boolean;
+}
+
+/** Club + lista de encargados resueltos, para pantallas que necesitan mostrarlos juntos. */
+export interface ClubConEncargados extends Club {
+  encargados: (Encargado & { usuario: { id_usuario: number; nombre: string } })[];
 }

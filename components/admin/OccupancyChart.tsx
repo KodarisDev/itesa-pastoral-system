@@ -6,14 +6,15 @@ import type { Club } from "@/types";
 
 interface OccupancyChartProps {
   clubes: Club[];
+  miembrosPorClub: Map<number, number>;
 }
 
-export function OccupancyChart({ clubes }: OccupancyChartProps) {
+export function OccupancyChart({ clubes, miembrosPorClub }: OccupancyChartProps) {
   const isDark = useIsDarkMode();
   const data = clubes.map((c) => ({
     nombre: c.nombre.length > 14 ? `${c.nombre.slice(0, 14)}…` : c.nombre,
-    miembros: c.miembrosActuales.length,
-    cupo: c.capacidadMaxima,
+    miembros: miembrosPorClub.get(c.id_club) ?? 0,
+    cupo: c.capacidad ?? 0,
   }));
 
   const gridColor = isDark ? "#262626" : "#f0f0f0";

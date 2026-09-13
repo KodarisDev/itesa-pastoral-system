@@ -1,100 +1,63 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { promises as fs } from "fs";
-import path from "path";
-import { auth } from "@/lib/auth";
-import { clubSchema } from "@/lib/validations/club.schema";
-import { getClubById, getClubes, saveClub, saveClubes, deleteClub as dbDeleteClub } from "@/lib/db/clubes";
-import { getUsuarioById, saveUsuario } from "@/lib/db/usuarios";
-import { appendHistorial } from "@/lib/db/historial";
-import { generarId } from "@/lib/utils";
-import { MAX_FOTO_CLUB_BYTES, TIPOS_FOTO_CLUB_PERMITIDOS } from "@/lib/constants";
-import type { HistorialClub } from "@/types";
+import { clubSchema, clubCreateSchema } from "@/lib/validations/club.schema";
+import {
+  getClubById,
+  crearClub,
+  actualizarClub,
+  eliminarClub,
+  agregarEncargado,
+  quitarEncargado,
+  getEncargadosDeClub,
+  getClubesDeUsuario,
+  contarMiembros,
+} from "@/lib/db/clubes";
+import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
+import { getUsuarioByEstudianteId } from "@/lib/db/usuarios";
+import { subirFotoClub, borrarFotoClub } from "@/lib/supabase/storage";
+import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
-async function requirePastoral() {
-  const session = await auth();
-  if (!session || session.user.rol !== "pastoral") {
-    throw new Error("No tienes permiso para realizar esta acción.");
-  }
-  return session;
-}
-
-const EXT_POR_TIPO: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
-async function guardarFotoClub(clubId: string, foto: File): Promise<string> {
-  if (!TIPOS_FOTO_CLUB_PERMITIDOS.includes(foto.type)) {
-    throw new Error("La foto debe ser JPG, PNG o WEBP.");
-  }
-  if (foto.size > MAX_FOTO_CLUB_BYTES) {
-    throw new Error("La foto no puede pesar más de 2MB.");
-  }
-  const ext = EXT_POR_TIPO[foto.type] ?? "jpg";
-  const dir = path.join(process.cwd(), "public", "uploads", "clubs");
-  await fs.mkdir(dir, { recursive: true });
-  const filename = `${clubId}-${Date.now()}.${ext}`;
-  const buffer = Buffer.from(await foto.arrayBuffer());
-  await fs.writeFile(path.join(dir, filename), buffer);
-  return `/uploads/clubs/${filename}`;
-}
-
-export async function createClub(formData: FormData): Promise<ActionResult<{ id: string }>> {
+export async function createClub(formData: FormData): Promise<ActionResult<{ id: number }>> {
   try {
-    await requirePastoral();
+    await requirePermiso("clubes:gestionar");
 
-    const parsed = clubSchema.safeParse({
+    const parsed = clubCreateSchema.safeParse({
       nombre: formData.get("nombre"),
       descripcion: formData.get("descripcion"),
-      capacidadMaxima: formData.get("capacidadMaxima"),
-      duracionMeses: formData.get("duracionMeses"),
-      encargadoUsuarioId: formData.get("encargadoUsuarioId") || null,
+      capacidad: formData.get("capacidadMaxima") ?? formData.get("capacidad"),
+      encargadoPrincipalId: formData.get("encargadoUsuarioId") || null,
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Datos inválidos.");
     }
 
-    const id = generarId("club");
-    const hoy = new Date().toISOString().slice(0, 10);
-    const anioEscolar = new Date().getFullYear().toString();
-
-    let fotoUrl: string | null = null;
-    const foto = formData.get("foto");
-    if (foto instanceof File && foto.size > 0) {
-      fotoUrl = await guardarFotoClub(id, foto);
-    }
-
-    await saveClub({
-      id,
+    const club = await crearClub({
       nombre: parsed.data.nombre,
       descripcion: parsed.data.descripcion,
-      fotoUrl,
-      capacidadMaxima: parsed.data.capacidadMaxima,
-      duracionMeses: parsed.data.duracionMeses,
-      encargadoUsuarioId: parsed.data.encargadoUsuarioId ?? null,
-      cicloActual: { numero: 1, fechaInicio: hoy, anioEscolar },
-      miembrosActuales: [],
+      capacidad: parsed.data.capacidad,
+      foto: null,
     });
 
-    if (parsed.data.encargadoUsuarioId) {
-      const usuario = await getUsuarioById(parsed.data.encargadoUsuarioId);
-      if (usuario) await saveUsuario({ ...usuario, clubId: id });
+    const foto = formData.get("foto");
+    if (foto instanceof File && foto.size > 0) {
+      const fotoUrl = await subirFotoClub(club.id_club, foto);
+      await actualizarClub(club.id_club, { foto: fotoUrl });
     }
 
+    await agregarEncargado(club.id_club, parsed.data.encargadoPrincipalId, true);
+
     revalidatePath("/admin/clubes");
-    return actionOk({ id });
+    return actionOk({ id: club.id_club });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el club.");
   }
 }
 
-export async function updateClub(clubId: string, formData: FormData): Promise<ActionResult> {
+export async function updateClub(clubId: number, formData: FormData): Promise<ActionResult> {
   try {
-    await requirePastoral();
+    await requirePermiso("clubes:gestionar");
 
     const club = await getClubById(clubId);
     if (!club) return actionError("El club no existe.");
@@ -102,46 +65,34 @@ export async function updateClub(clubId: string, formData: FormData): Promise<Ac
     const parsed = clubSchema.safeParse({
       nombre: formData.get("nombre"),
       descripcion: formData.get("descripcion"),
-      capacidadMaxima: formData.get("capacidadMaxima"),
-      duracionMeses: formData.get("duracionMeses"),
-      encargadoUsuarioId: formData.get("encargadoUsuarioId") || null,
+      capacidad: formData.get("capacidadMaxima") ?? formData.get("capacidad"),
+      encargadoPrincipalId: formData.get("encargadoUsuarioId") || null,
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Datos inválidos.");
     }
 
-    if (parsed.data.capacidadMaxima < club.miembrosActuales.length) {
-      return actionError(
-        `No puedes bajar el cupo a ${parsed.data.capacidadMaxima}: el club ya tiene ${club.miembrosActuales.length} miembros.`,
-      );
+    let foto = club.foto;
+    const nuevaFoto = formData.get("foto");
+    if (nuevaFoto instanceof File && nuevaFoto.size > 0) {
+      if (foto) await borrarFotoClub(foto).catch(() => {});
+      foto = await subirFotoClub(clubId, nuevaFoto);
     }
 
-    let fotoUrl = club.fotoUrl;
-    const foto = formData.get("foto");
-    if (foto instanceof File && foto.size > 0) {
-      fotoUrl = await guardarFotoClub(clubId, foto);
-    }
-
-    const encargadoAnteriorId = club.encargadoUsuarioId;
-    const encargadoNuevoId = parsed.data.encargadoUsuarioId ?? null;
-
-    await saveClub({
-      ...club,
+    await actualizarClub(clubId, {
       nombre: parsed.data.nombre,
       descripcion: parsed.data.descripcion,
-      fotoUrl,
-      capacidadMaxima: parsed.data.capacidadMaxima,
-      duracionMeses: parsed.data.duracionMeses,
-      encargadoUsuarioId: encargadoNuevoId,
+      capacidad: parsed.data.capacidad,
+      foto,
     });
 
-    if (encargadoAnteriorId && encargadoAnteriorId !== encargadoNuevoId) {
-      const anterior = await getUsuarioById(encargadoAnteriorId);
-      if (anterior) await saveUsuario({ ...anterior, clubId: undefined });
-    }
-    if (encargadoNuevoId && encargadoNuevoId !== encargadoAnteriorId) {
-      const nuevo = await getUsuarioById(encargadoNuevoId);
-      if (nuevo) await saveUsuario({ ...nuevo, clubId });
+    const encargados = await getEncargadosDeClub(clubId);
+    const principalActual = encargados.find((e) => e.encargado_principal);
+    const principalNuevoId = parsed.data.encargadoPrincipalId ?? null;
+
+    if (principalNuevoId !== (principalActual?.id_usuario ?? null)) {
+      if (principalActual) await quitarEncargado(clubId, principalActual.id_usuario);
+      if (principalNuevoId) await agregarEncargado(clubId, principalNuevoId, true);
     }
 
     revalidatePath("/admin/clubes");
@@ -152,15 +103,12 @@ export async function updateClub(clubId: string, formData: FormData): Promise<Ac
   }
 }
 
-export async function deleteClub(clubId: string): Promise<ActionResult> {
+export async function deleteClub(clubId: number): Promise<ActionResult> {
   try {
-    await requirePastoral();
+    await requirePermiso("clubes:gestionar");
     const club = await getClubById(clubId);
     if (!club) return actionError("El club no existe.");
-    if (club.miembrosActuales.length > 0) {
-      return actionError("No puedes eliminar un club que todavía tiene miembros. Inicia un nuevo ciclo primero o reasigna a sus miembros.");
-    }
-    await dbDeleteClub(clubId);
+    await eliminarClub(clubId);
     revalidatePath("/admin/clubes");
     return actionOk(undefined);
   } catch (err) {
@@ -168,56 +116,22 @@ export async function deleteClub(clubId: string): Promise<ActionResult> {
   }
 }
 
-export async function startNewCycle(clubId: string): Promise<ActionResult<{ archivados: number }>> {
+export async function removeMiembroDeClub(clubId: number, estudianteId: number): Promise<ActionResult> {
   try {
-    await requirePastoral();
-    const club = await getClubById(clubId);
-    if (!club) return actionError("El club no existe.");
+    await requirePermiso("estudiantes:gestionar");
 
-    const hoy = new Date().toISOString().slice(0, 10);
+    const estudiante = await getEstudianteById(estudianteId);
+    if (!estudiante) return actionError("El estudiante no existe.");
 
-    if (club.miembrosActuales.length > 0) {
-      const entradas: HistorialClub[] = club.miembrosActuales.map((estudianteId) => ({
-        id: generarId("hist"),
-        estudianteId,
-        clubId: club.id,
-        clubNombre: club.nombre,
-        anioEscolar: club.cicloActual.anioEscolar,
-        cicloNumero: club.cicloActual.numero,
-        fechaInicio: club.cicloActual.fechaInicio,
-        fechaFin: hoy,
-        motivoArchivo: "nuevo_ciclo",
-      }));
-      await appendHistorial(entradas);
+    const usuarioEncargado = await getUsuarioByEstudianteId(estudianteId);
+    if (usuarioEncargado) {
+      const susClubes = await getEncargadosDeClub(clubId);
+      if (susClubes.some((e) => e.id_usuario === usuarioEncargado.id_usuario)) {
+        return actionError("Este estudiante es encargado de este club — quítalo como encargado primero, no como miembro.");
+      }
     }
 
-    await saveClub({
-      ...club,
-      miembrosActuales: [],
-      cicloActual: {
-        numero: club.cicloActual.numero + 1,
-        fechaInicio: hoy,
-        anioEscolar: club.cicloActual.anioEscolar,
-      },
-    });
-
-    revalidatePath("/admin/clubes");
-    revalidatePath(`/admin/clubes/${clubId}`);
-    return actionOk({ archivados: club.miembrosActuales.length });
-  } catch (err) {
-    return actionError(err instanceof Error ? err.message : "No se pudo iniciar el nuevo ciclo.");
-  }
-}
-
-export async function removeMiembroDeClub(clubId: string, estudianteId: string): Promise<ActionResult> {
-  try {
-    await requirePastoral();
-    const club = await getClubById(clubId);
-    if (!club) return actionError("El club no existe.");
-    await saveClub({
-      ...club,
-      miembrosActuales: club.miembrosActuales.filter((id) => id !== estudianteId),
-    });
+    await actualizarEstudiante(estudianteId, { id_club: null });
     revalidatePath(`/admin/clubes/${clubId}`);
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
@@ -228,32 +142,31 @@ export async function removeMiembroDeClub(clubId: string, estudianteId: string):
   }
 }
 
-export async function cambiarClubEstudiante(estudianteId: string, clubDestinoId: string): Promise<ActionResult> {
+export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId: number): Promise<ActionResult> {
   try {
-    await requirePastoral();
-    const clubes = await getClubes();
+    await requirePermiso("estudiantes:gestionar");
 
-    const clubDestino = clubes.find((c) => c.id === clubDestinoId);
+    const clubDestino = await getClubById(clubDestinoId);
     if (!clubDestino) return actionError("El club no existe.");
-    if (clubDestino.miembrosActuales.includes(estudianteId)) {
+
+    const estudiante = await getEstudianteById(estudianteId);
+    if (!estudiante) return actionError("El estudiante no existe.");
+    if (estudiante.id_club === clubDestinoId) {
       return actionError("El estudiante ya pertenece a ese club.");
     }
-    if (clubDestino.capacidadMaxima - clubDestino.miembrosActuales.length <= 0) {
-      return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
+
+    const usuarioEncargado = await getUsuarioByEstudianteId(estudianteId);
+    if (usuarioEncargado) {
+      const encargos = await getClubesDeUsuario(usuarioEncargado.id_usuario);
+      if (encargos.length > 0) {
+        return actionError("Este estudiante es encargado de un club — no se le puede asignar a otro club aparte.");
+      }
     }
 
-    const clubOrigen = clubes.find((c) => c.miembrosActuales.includes(estudianteId));
+    const cupo = (clubDestino.capacidad ?? Infinity) - (await contarMiembros(clubDestinoId));
+    if (cupo <= 0) return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
 
-    const next = clubes.map((c) => {
-      if (clubOrigen && c.id === clubOrigen.id) {
-        return { ...c, miembrosActuales: c.miembrosActuales.filter((id) => id !== estudianteId) };
-      }
-      if (c.id === clubDestino.id) {
-        return { ...c, miembrosActuales: [...c.miembrosActuales, estudianteId] };
-      }
-      return c;
-    });
-    await saveClubes(next);
+    await actualizarEstudiante(estudianteId, { id_club: clubDestinoId });
 
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
@@ -263,4 +176,3 @@ export async function cambiarClubEstudiante(estudianteId: string, clubDestinoId:
     return actionError(err instanceof Error ? err.message : "No se pudo cambiar de club al estudiante.");
   }
 }
-

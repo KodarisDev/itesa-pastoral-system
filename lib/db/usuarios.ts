@@ -1,71 +1,69 @@
-import { promises as fs } from "fs";
 import bcrypt from "bcryptjs";
-import { writeJson, withFileLock, absoluteDbPath, absoluteSeedPath } from "./base";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { Usuario } from "@/types";
 
-const FILE = "usuarios.json";
-
-interface UsuarioSeed extends Omit<Usuario, "passwordHash"> {
-  passwordPlano: string;
+export async function getUsuarios(): Promise<Usuario[]> {
+  const { data, error } = await getSupabaseAdmin().from("usuarios").select("*").order("nombre");
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-/**
- * Lectura sin lock: si data/db/usuarios.json no existe todavía, lo inicializa
- * hasheando las contraseñas en texto plano del seed (data/seed/usuarios.seed.json)
- * con bcryptjs, y escribe el resultado ya hasheado. El seed nunca guarda hashes.
- */
-async function readUsuariosRaw(): Promise<Usuario[]> {
-  try {
-    const raw = await fs.readFile(absoluteDbPath(FILE), "utf-8");
-    return JSON.parse(raw) as Usuario[];
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-    const seedRaw = await fs.readFile(absoluteSeedPath("usuarios.seed.json"), "utf-8");
-    const seed = JSON.parse(seedRaw) as UsuarioSeed[];
-    const usuarios: Usuario[] = seed.map(({ passwordPlano, ...resto }) => ({
-      ...resto,
-      passwordHash: bcrypt.hashSync(passwordPlano, 10),
-    }));
-    await writeJson(FILE, usuarios);
-    return usuarios;
-  }
+export async function getUsuarioByUsername(usuario: string): Promise<Usuario | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("usuarios")
+    .select("*")
+    .ilike("usuario", usuario)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export const getUsuarios = () => readUsuariosRaw();
-
-export async function getUsuarioByUsername(username: string) {
-  const list = await readUsuariosRaw();
-  return (
-    list.find((u) => u.username.toLowerCase() === username.toLowerCase()) ?? null
-  );
+export async function getUsuarioById(idUsuario: number): Promise<Usuario | null> {
+  const { data, error } = await getSupabaseAdmin().from("usuarios").select("*").eq("id_usuario", idUsuario).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function getUsuarioById(id: string) {
-  const list = await readUsuariosRaw();
-  return list.find((u) => u.id === id) ?? null;
+/** Si el estudiante ya tiene una cuenta de encargado vinculada, la devuelve. */
+export async function getUsuarioByEstudianteId(idEstudiante: number): Promise<Usuario | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("usuarios")
+    .select("*")
+    .eq("id_estudiante", idEstudiante)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export function saveUsuario(usuario: Usuario) {
-  return withFileLock(FILE, async () => {
-    const list = await readUsuariosRaw();
-    const idx = list.findIndex((u) => u.id === usuario.id);
-    if (idx >= 0) list[idx] = usuario;
-    else list.push(usuario);
-    await writeJson(FILE, list);
-    return usuario;
-  });
+export async function crearUsuario(usuario: Omit<Usuario, "id_usuario">): Promise<Usuario> {
+  const { data, error } = await getSupabaseAdmin().from("usuarios").insert(usuario).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export function deleteUsuario(id: string) {
-  return withFileLock(FILE, async () => {
-    const list = await readUsuariosRaw();
-    await writeJson(
-      FILE,
-      list.filter((u) => u.id !== id),
-    );
-  });
+export async function actualizarUsuario(
+  idUsuario: number,
+  cambios: Partial<Omit<Usuario, "id_usuario">>,
+): Promise<Usuario> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("usuarios")
+    .update(cambios)
+    .eq("id_usuario", idUsuario)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function eliminarUsuario(idUsuario: number): Promise<void> {
+  const { error } = await getSupabaseAdmin().from("usuarios").delete().eq("id_usuario", idUsuario);
+  if (error) throw new Error(error.message);
 }
 
 export function hashPassword(plain: string) {
   return bcrypt.hashSync(plain, 10);
+}
+
+export function compararPassword(plain: string, hash: string) {
+  return bcrypt.compareSync(plain, hash);
 }

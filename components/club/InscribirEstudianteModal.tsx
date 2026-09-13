@@ -22,21 +22,14 @@ interface InscribirEstudianteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   estudiantes: Estudiante[];
-  clubPorEstudiante: Map<string, string>;
   clubNombre: string;
 }
 
-export function InscribirEstudianteModal({
-  open,
-  onOpenChange,
-  estudiantes,
-  clubPorEstudiante,
-  clubNombre,
-}: InscribirEstudianteModalProps) {
+export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, clubNombre }: InscribirEstudianteModalProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [estudianteId, setEstudianteId] = useState<string | null>(null);
+  const [estudianteId, setEstudianteId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,7 +41,7 @@ export function InscribirEstudianteModal({
   }, [open]);
 
   const estudianteSeleccionado = useMemo(
-    () => estudiantes.find((e) => e.id === estudianteId) ?? null,
+    () => estudiantes.find((e) => e.id_estudiante === estudianteId) ?? null,
     [estudiantes, estudianteId],
   );
 
@@ -109,14 +102,13 @@ export function InscribirEstudianteModal({
                     </p>
                   ) : (
                     resultados.map((e) => {
-                      const clubDeE = clubPorEstudiante.get(e.id);
-                      const disponible = !clubDeE;
+                      const disponible = e.id_club == null;
                       return (
                         <button
-                          key={e.id}
+                          key={e.id_estudiante}
                           type="button"
                           disabled={!disponible}
-                          onClick={() => disponible && setEstudianteId(e.id)}
+                          onClick={() => disponible && setEstudianteId(e.id_estudiante)}
                           className="flex w-full items-center justify-between gap-2 border-b border-gray-100 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent dark:border-neutral-800 dark:hover:bg-neutral-800"
                         >
                           <span>
@@ -124,7 +116,7 @@ export function InscribirEstudianteModal({
                               {e.nombre} {e.apellido}
                             </span>
                             <span className="text-xs text-gray-400 dark:text-gray-500">
-                              {e.curso} · {e.matricula}
+                              {e.curso ?? "Sin curso"} · {e.matricula}
                             </span>
                           </span>
                           {!disponible && (
@@ -148,7 +140,7 @@ export function InscribirEstudianteModal({
                       {estudianteSeleccionado.nombre} {estudianteSeleccionado.apellido}
                     </span>{" "}
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                      · {estudianteSeleccionado.curso} · {estudianteSeleccionado.matricula}
+                      · {estudianteSeleccionado.curso ?? "Sin curso"} · {estudianteSeleccionado.matricula}
                     </span>
                   </span>
                 </span>

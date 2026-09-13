@@ -22,12 +22,10 @@ type ModoFecha = "todas" | "especifica" | "rango";
 
 interface ExportAsistenciaModalProps {
   scope: "admin" | "encargado";
-  clubes?: { id: string; nombre: string }[];
-  ciclos: number[];
-  anios: string[];
+  clubes?: { id: number; nombre: string }[];
 }
 
-export function ExportAsistenciaModal({ scope, clubes = [], ciclos, anios }: ExportAsistenciaModalProps) {
+export function ExportAsistenciaModal({ scope, clubes = [] }: ExportAsistenciaModalProps) {
   const [open, setOpen] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [clubId, setClubId] = useState("todos");
@@ -35,14 +33,10 @@ export function ExportAsistenciaModal({ scope, clubes = [], ciclos, anios }: Exp
   const [fecha, setFecha] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
-  const [ciclo, setCiclo] = useState("todos");
-  const [anio, setAnio] = useState("todos");
 
   async function handleExportar() {
     const params = new URLSearchParams();
     if (scope === "admin" && clubId !== "todos") params.set("clubId", clubId);
-    if (ciclo !== "todos") params.set("ciclo", ciclo);
-    if (anio !== "todos") params.set("anioEscolar", anio);
     if (modoFecha === "especifica" && fecha) params.set("fecha", fecha);
     if (modoFecha === "rango") {
       if (desde) params.set("desde", desde);
@@ -104,7 +98,7 @@ export function ExportAsistenciaModal({ scope, clubes = [], ciclos, anios }: Exp
                 <SelectContent>
                   <SelectItem value="todos">Todos los clubes</SelectItem>
                   {clubes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.nombre}
                     </SelectItem>
                   ))}
@@ -158,41 +152,6 @@ export function ExportAsistenciaModal({ scope, clubes = [], ciclos, anios }: Exp
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="export-ciclo">Ciclo</Label>
-              <Select value={ciclo} onValueChange={setCiclo}>
-                <SelectTrigger id="export-ciclo">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los ciclos</SelectItem>
-                  {ciclos.map((c) => (
-                    <SelectItem key={c} value={String(c)}>
-                      Ciclo #{c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="export-anio">Año escolar</Label>
-              <Select value={anio} onValueChange={setAnio}>
-                <SelectTrigger id="export-anio">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  {anios.map((a) => (
-                    <SelectItem key={a} value={a}>
-                      {a}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
 
