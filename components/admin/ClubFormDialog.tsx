@@ -27,17 +27,26 @@ interface ClubFormDialogProps {
   mode: "crear" | "editar";
   club?: Club;
   encargadoPrincipalId?: number | null;
+  encargadoSecundarioId?: number | null;
   encargados: Usuario[];
   trigger: ReactNode;
 }
 
-export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, trigger }: ClubFormDialogProps) {
+export function ClubFormDialog({
+  mode,
+  club,
+  encargadoPrincipalId,
+  encargadoSecundarioId,
+  encargados,
+  trigger,
+}: ClubFormDialogProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [encargadoId, setEncargadoId] = useState(encargadoPrincipalId ? String(encargadoPrincipalId) : "");
+  const [encargadoSecId, setEncargadoSecId] = useState(encargadoSecundarioId ? String(encargadoSecundarioId) : "");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,6 +56,7 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
       descripcion: formData.get("descripcion"),
       capacidad: formData.get("capacidadMaxima"),
       encargadoPrincipalId: encargadoId || null,
+      encargadoSecundarioId: encargadoSecId || null,
     };
     const parsed = clubSchema.safeParse(raw);
     if (!parsed.success) {
@@ -55,11 +65,13 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
         nombre: flat.nombre?.[0] ?? "",
         descripcion: flat.descripcion?.[0] ?? "",
         capacidad: flat.capacidad?.[0] ?? "",
+        encargadoSecundarioId: flat.encargadoSecundarioId?.[0] ?? "",
       });
       return;
     }
     setFieldErrors({});
     formData.set("encargadoUsuarioId", encargadoId);
+    formData.set("encargadoSecundarioUsuarioId", encargadoSecId);
 
     startTransition(async () => {
       const res = mode === "crear" ? await createClub(formData) : await updateClub(club!.id_club, formData);
@@ -76,7 +88,7 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="overflow-hidden sm:max-h-[85vh] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{mode === "crear" ? "Nuevo club" : `Editar ${club?.nombre}`}</DialogTitle>
           <DialogDescription>
@@ -86,8 +98,8 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} onSubmit={handleSubmit}>
-          <div className="space-y-4 px-6 py-6">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-6">
             <div>
               <Label htmlFor="nombre">Nombre del club</Label>
               <Input id="nombre" name="nombre" defaultValue={club?.nombre} invalid={!!fieldErrors.nombre} placeholder="Ej. Coro y Música" />
@@ -147,7 +159,14 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
 
             <div>
               <Label htmlFor="encargadoUsuarioId">Encargado principal (opcional)</Label>
-              <Select value={encargadoId || "none"} onValueChange={(v) => setEncargadoId(v === "none" ? "" : v)}>
+              <Select
+                value={encargadoId || "none"}
+                onValueChange={(v) => {
+                  const nuevo = v === "none" ? "" : v;
+                  setEncargadoId(nuevo);
+                  if (nuevo && nuevo === encargadoSecId) setEncargadoSecId("");
+                }}
+              >
                 <SelectTrigger id="encargadoUsuarioId">
                   <SelectValue placeholder="Sin encargado asignado" />
                 </SelectTrigger>
@@ -160,9 +179,36 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
                   ))}
                 </SelectContent>
               </Select>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                Para agregar un encargado secundario o crear uno nuevo, ve a la sección Encargados.
-              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="encargadoSecundarioUsuarioId">Encargado secundario (opcional)</Label>
+              <Select
+                value={encargadoSecId || "none"}
+                onValueChange={(v) => {
+                  const nuevo = v === "none" ? "" : v;
+                  setEncargadoSecId(nuevo);
+                  if (nuevo && nuevo === encargadoId) setEncargadoId("");
+                }}
+              >
+                <SelectTrigger id="encargadoSecundarioUsuarioId" invalid={!!fieldErrors.encargadoSecundarioId}>
+                  <SelectValue placeholder="Sin encargado secundario" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin encargado secundario</SelectItem>
+                  {encargados.map((u) => (
+                    <SelectItem key={u.id_usuario} value={String(u.id_usuario)}>
+                      {u.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.encargadoSecundarioId && (
+                <p role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.encargadoSecundarioId}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Para crear un encargado nuevo, ve a la sección Encargados.</p>
             </div>
           </div>
 

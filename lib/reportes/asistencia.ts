@@ -1,7 +1,5 @@
-import { getAsistenciaTodas, getAsistenciaPorClub, getAsistenciaPorEstudiante } from "@/lib/db/asistencia";
-import { getClubes } from "@/lib/db/clubes";
-import { getEstudiantes } from "@/lib/db/estudiantes";
-import { getUsuarios } from "@/lib/db/usuarios";
+import { getAsistenciaPorEstudiante } from "@/lib/db/asistencia";
+import { getClubesCached, getEstudiantesCached, getUsuariosCached, getAsistenciaTodasCached, getAsistenciaPorClubCached } from "@/lib/db/cached";
 import type { RegistroAsistencia } from "@/lib/db/asistencia";
 
 export interface FiltroAsistencia {
@@ -77,10 +75,10 @@ function agruparEnSesiones(
 
 export async function getSesionesEnriquecidas(filtro: FiltroAsistencia = {}): Promise<SesionEnriquecida[]> {
   const [filas, clubes, estudiantes, usuarios] = await Promise.all([
-    filtro.clubId ? getAsistenciaPorClub(filtro.clubId) : getAsistenciaTodas(),
-    getClubes(),
-    getEstudiantes(),
-    getUsuarios(),
+    filtro.clubId ? getAsistenciaPorClubCached(filtro.clubId) : getAsistenciaTodasCached(),
+    getClubesCached(),
+    getEstudiantesCached(),
+    getUsuariosCached(),
   ]);
 
   const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
@@ -97,9 +95,9 @@ export async function getSesionesEnriquecidas(filtro: FiltroAsistencia = {}): Pr
 export async function getSesionesDeEstudiante(idEstudiante: number): Promise<SesionEnriquecida[]> {
   const [filas, clubes, estudiantes, usuarios] = await Promise.all([
     getAsistenciaPorEstudiante(idEstudiante),
-    getClubes(),
-    getEstudiantes(),
-    getUsuarios(),
+    getClubesCached(),
+    getEstudiantesCached(),
+    getUsuariosCached(),
   ]);
   const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
   const estudiantesMap = new Map(estudiantes.map((e) => [e.id_estudiante, e]));
@@ -112,7 +110,7 @@ export interface OpcionesFiltroAsistencia {
 }
 
 export async function getOpcionesFiltro(soloClubId?: number): Promise<OpcionesFiltroAsistencia> {
-  const clubes = await getClubes();
+  const clubes = await getClubesCached();
   const clubesVisibles = soloClubId ? clubes.filter((c) => c.id_club === soloClubId) : clubes;
   return { clubes: clubesVisibles.map((c) => ({ id: c.id_club, nombre: c.nombre })) };
 }

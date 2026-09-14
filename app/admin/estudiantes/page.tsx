@@ -2,8 +2,7 @@ import Link from "next/link";
 import { ArrowUpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StudentsManager } from "@/components/admin/StudentsManager";
-import { getEstudiantes } from "@/lib/db/estudiantes";
-import { getClubes } from "@/lib/db/clubes";
+import { getEstudiantesCached, getClubesCached } from "@/lib/db/cached";
 import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminEstudiantesPage({ searchParams }: { searchParams: { matricula?: string } }) {
   await requireVista("estudiantes:ver");
 
-  const [estudiantes, clubes] = await Promise.all([getEstudiantes(), getClubes()]);
+  const [estudiantes, clubes] = await Promise.all([getEstudiantesCached(), getClubesCached()]);
 
   return (
     <div className="space-y-6">

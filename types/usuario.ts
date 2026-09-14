@@ -6,6 +6,7 @@ export interface Usuario {
   usuario: string;
   password_hash: string;
   activo: boolean;
+  primer_inicio_sesion: boolean;
 }
 
 export type UsuarioPublico = Omit<Usuario, "password_hash">;

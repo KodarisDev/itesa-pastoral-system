@@ -6,6 +6,7 @@ interface StatCardProps {
   value: string | number;
   icon: LucideIcon;
   accent?: "brand" | "success" | "warning" | "neutral";
+  onClick?: () => void;
 }
 
 const ICON_WRAP: Record<NonNullable<StatCardProps["accent"]>, string> = {
@@ -15,9 +16,9 @@ const ICON_WRAP: Record<NonNullable<StatCardProps["accent"]>, string> = {
   neutral: "bg-gray-50 text-gray-500 border-gray-100 dark:bg-neutral-800 dark:text-gray-400 dark:border-neutral-700",
 };
 
-export function StatCard({ label, value, icon: Icon, accent = "neutral" }: StatCardProps) {
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 text-gray-800 transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100">
+export function StatCard({ label, value, icon: Icon, accent = "neutral", onClick }: StatCardProps) {
+  const contenido = (
+    <>
       <div className="flex items-start justify-between">
         <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</span>
         <span className={cn("flex h-8 w-8 items-center justify-center rounded-full border", ICON_WRAP[accent])}>
@@ -25,6 +26,24 @@ export function StatCard({ label, value, icon: Icon, accent = "neutral" }: StatC
         </span>
       </div>
       <div className="text-3xl font-bold text-gray-900 dark:text-white">{value}</div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 text-left text-gray-800 transition-colors duration-300 hover:border-red-200 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100 dark:hover:border-red-900/50"
+      >
+        {contenido}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 text-gray-800 transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100">
+      {contenido}
     </div>
   );
 }

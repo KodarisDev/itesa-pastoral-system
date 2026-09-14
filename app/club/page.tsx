@@ -5,8 +5,7 @@ import { ClubHeaderCard } from "@/components/club/ClubHeaderCard";
 import { StatCard } from "@/components/admin/StatCard";
 import { getClubById } from "@/lib/db/clubes";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
-import { getAsistenciaPorClub } from "@/lib/db/asistencia";
-import { getConfiguracion } from "@/lib/db/configuracion";
+import { getAsistenciaPorClubCached, getConfiguracionCached } from "@/lib/db/cached";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +17,8 @@ export default async function ClubHomePage() {
   const [club, miembros, filas, configuracion] = await Promise.all([
     getClubById(idClub),
     getEstudiantesPorClub(idClub),
-    getAsistenciaPorClub(idClub),
-    getConfiguracion(),
+    getAsistenciaPorClubCached(idClub),
+    getConfiguracionCached(),
   ]);
   if (!club) redirect("/login");
 

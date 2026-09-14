@@ -4,6 +4,8 @@ import { AttendanceSheet } from "@/components/club/AttendanceSheet";
 import { getClubById } from "@/lib/db/clubes";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 import { getAsistenciaDia } from "@/lib/db/asistencia";
+import { getConfiguracion } from "@/lib/db/configuracion";
+import { calcularVentanaAsistencia } from "@/lib/asistencia-ventana";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +15,15 @@ export default async function ClubAsistenciaPage({ searchParams }: { searchParam
   if (!idClub) redirect("/login");
 
   const fecha = searchParams.fecha ?? new Date().toISOString().slice(0, 10);
-  const [club, miembros, registrosDia] = await Promise.all([
+  const [club, miembros, registrosDia, configuracion] = await Promise.all([
     getClubById(idClub),
     getEstudiantesPorClub(idClub),
     getAsistenciaDia(idClub, fecha),
+    getConfiguracion(),
   ]);
   if (!club) redirect("/login");
+
+  const ventana = calcularVentanaAsistencia(configuracion);
 
   return (
     <div className="space-y-6">
@@ -26,7 +31,14 @@ export default async function ClubAsistenciaPage({ searchParams }: { searchParam
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Pasar lista</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{club.nombre} — marca quién asistió y guarda la asistencia.</p>
       </div>
-      <AttendanceSheet key={fecha} clubId={club.id_club} fecha={fecha} miembros={miembros} registrosIniciales={registrosDia} />
+      <AttendanceSheet
+        key={fecha}
+        clubId={club.id_club}
+        fecha={fecha}
+        miembros={miembros}
+        registrosIniciales={registrosDia}
+        ventana={ventana}
+      />
     </div>
   );
 }

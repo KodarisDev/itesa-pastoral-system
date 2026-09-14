@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/admin/StatCard";
 import { OccupancyChart } from "@/components/admin/OccupancyChart";
-import { getClubes } from "@/lib/db/clubes";
-import { getEstudiantes, getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
+import { getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
+import { getClubesCached, getEstudiantesCached } from "@/lib/db/cached";
 import { getSesionesEnriquecidas } from "@/lib/reportes/asistencia";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +21,8 @@ function fechaUltimoMiercoles(): string {
 
 export default async function AdminDashboardPage() {
   const [clubes, estudiantes, sesiones, miembrosPorClub] = await Promise.all([
-    getClubes(),
-    getEstudiantes(),
+    getClubesCached(),
+    getEstudiantesCached(),
     getSesionesEnriquecidas(),
     getConteoMiembrosPorClub(),
   ]);

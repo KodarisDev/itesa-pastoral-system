@@ -7,18 +7,20 @@ interface SwitchProps {
   onCheckedChange: (checked: boolean) => void;
   label?: string;
   id?: string;
+  disabled?: boolean;
 }
 
 /** Switch hand-rolled sobre un checkbox oculto, per §7.5 de la guía de diseño. */
-export function Switch({ checked, onCheckedChange, label, id }: SwitchProps) {
+export function Switch({ checked, onCheckedChange, label, id, disabled }: SwitchProps) {
   return (
-    <label htmlFor={id} className="inline-flex cursor-pointer items-center gap-2">
+    <label htmlFor={id} className={cn("inline-flex items-center gap-2", disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer")}>
       <input
         id={id}
         type="checkbox"
         role="switch"
         aria-checked={checked}
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onCheckedChange(e.target.checked)}
         className="peer sr-only"
       />

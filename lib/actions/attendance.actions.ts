@@ -1,10 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import { auth } from "@/lib/auth";
 import { asistenciaSchema, type AsistenciaFormValues } from "@/lib/validations/attendance.schema";
 import { guardarAsistencia } from "@/lib/db/asistencia";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
+import { getConfiguracion } from "@/lib/db/configuracion";
+import { calcularVentanaAsistencia } from "@/lib/asistencia-ventana";
 import { requirePermisoEnClub } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
@@ -19,6 +22,12 @@ export async function submitAttendance(values: AsistenciaFormValues): Promise<Ac
     }
 
     await requirePermisoEnClub("asistencia:pasar", parsed.data.clubId);
+
+    const configuracion = await getConfiguracion();
+    const ventana = calcularVentanaAsistencia(configuracion);
+    if (!ventana.abierta) {
+      return actionError("Fuera del horario de pastoral: solo puedes pasar lista durante las 24 horas después del horario configurado.");
+    }
 
     const miembros = await getEstudiantesPorClub(parsed.data.clubId);
     const idsValidos = new Set(miembros.map((m) => m.id_estudiante));
@@ -38,6 +47,7 @@ export async function submitAttendance(values: AsistenciaFormValues): Promise<Ac
 
     revalidatePath("/club/asistencia");
     revalidatePath("/club/historial");
+    revalidateTag(CACHE_TAGS.asistencia);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo guardar la asistencia. Inténtalo de nuevo.");

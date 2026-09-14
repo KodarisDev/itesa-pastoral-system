@@ -20,8 +20,14 @@ export function generateMetadata({ params }: NoticiaPageProps): Metadata {
   const noticia = getNoticiaBySlug(params.slug);
   if (!noticia) return {};
   return {
-    title: `${noticia.titulo} — Pastoral ITESA`,
+    title: noticia.titulo,
     description: noticia.resumen,
+    alternates: { canonical: `/noticias/${noticia.slug}` },
+    openGraph: {
+      title: noticia.titulo,
+      description: noticia.resumen,
+      type: "article",
+    },
   };
 }
 
@@ -31,8 +37,25 @@ export default function NoticiaPage({ params }: NoticiaPageProps) {
 
   const relacionadas = NOTICIAS.filter((n) => n.slug !== noticia.slug).slice(0, 2);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: noticia.titulo,
+    description: noticia.resumen,
+    datePublished: noticia.fecha,
+    articleSection: noticia.categoria,
+    url: `https://itesa.pastoral.do/noticias/${noticia.slug}`,
+    image: [`https://itesa.pastoral.do/noticias/${noticia.slug}/opengraph-image`],
+    publisher: {
+      "@type": "EducationalOrganization",
+      name: "Pastoral Salesiana del ITESA",
+      logo: { "@type": "ImageObject", url: "https://itesa.pastoral.do/android-chrome-512x512.png" },
+    },
+  };
+
   return (
     <main id="contenido" className="bg-white text-neutral-950">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Navbar />
 
       <article className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">

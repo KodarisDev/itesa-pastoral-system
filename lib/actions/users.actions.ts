@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import {
   usuarioEncargadoSchema,
   usuarioEncargadoUpdateSchema,
@@ -62,6 +63,7 @@ export async function createUsuarioEncargado(formData: FormData): Promise<Action
       usuario: parsed.data.username,
       password_hash: hashPassword(parsed.data.password),
       activo: true,
+      primer_inicio_sesion: true,
     });
 
     // El club es opcional al crear: puede asignarse después desde Editar.
@@ -77,6 +79,9 @@ export async function createUsuarioEncargado(formData: FormData): Promise<Action
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
+    revalidateTag(CACHE_TAGS.usuarios);
+    revalidateTag(CACHE_TAGS.clubes);
+    revalidateTag(CACHE_TAGS.estudiantes);
     return actionOk({ username: parsed.data.username });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el usuario.");
@@ -128,6 +133,7 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
       id_rol: parsed.data.idRol,
       id_estudiante: idEstudiante,
       password_hash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.password_hash,
+      ...(parsed.data.password ? { primer_inicio_sesion: true } : {}),
     });
 
     // Sin club nuevo: se quita de cualquier club que dirigiera (queda "sin asignar").
@@ -149,6 +155,9 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
+    revalidateTag(CACHE_TAGS.usuarios);
+    revalidateTag(CACHE_TAGS.clubes);
+    revalidateTag(CACHE_TAGS.estudiantes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo actualizar el usuario.");
@@ -168,6 +177,9 @@ export async function deleteUsuarioEncargado(usuarioId: number): Promise<ActionR
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
+    revalidateTag(CACHE_TAGS.usuarios);
+    revalidateTag(CACHE_TAGS.clubes);
+    revalidateTag(CACHE_TAGS.estudiantes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo eliminar el usuario.");
@@ -207,10 +219,12 @@ export async function createUsuarioAdmin(formData: FormData): Promise<ActionResu
       usuario: parsed.data.username,
       password_hash: hashPassword(parsed.data.password),
       activo: true,
+      primer_inicio_sesion: true,
     });
     await guardarPermisosDeUsuario(usuario.id_usuario, parsed.data.permisos);
 
     revalidatePath("/admin/usuarios");
+    revalidateTag(CACHE_TAGS.usuarios);
     return actionOk({ username: parsed.data.username });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el administrador.");
@@ -243,10 +257,12 @@ export async function updateUsuarioAdmin(usuarioId: number, formData: FormData):
       nombre: parsed.data.nombre,
       usuario: parsed.data.username,
       password_hash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.password_hash,
+      ...(parsed.data.password ? { primer_inicio_sesion: true } : {}),
     });
     await guardarPermisosDeUsuario(usuarioId, parsed.data.permisos);
 
     revalidatePath("/admin/usuarios");
+    revalidateTag(CACHE_TAGS.usuarios);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo actualizar el administrador.");

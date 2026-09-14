@@ -64,6 +64,7 @@ export interface Database {
           password_hash: string;
           activo: boolean;
           creado_en: string;
+          primer_inicio_sesion: boolean;
         };
         Insert: {
           id_usuario?: number;
@@ -74,6 +75,7 @@ export interface Database {
           password_hash: string;
           activo?: boolean;
           creado_en?: string;
+          primer_inicio_sesion?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["usuarios"]["Insert"]>;
         Relationships: [];

@@ -4,11 +4,15 @@ import { CreateAdminDialog } from "@/components/admin/CreateAdminDialog";
 import { AdminUsersManagementTable } from "@/components/admin/AdminUsersManagementTable";
 import { ConfiguracionHorarioForm } from "@/components/admin/ConfiguracionHorarioForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getUsuarios } from "@/lib/db/usuarios";
-import { getClubes, getEncargados } from "@/lib/db/clubes";
-import { getEstudiantes } from "@/lib/db/estudiantes";
-import { getRoles, getPermisosDeUsuario } from "@/lib/db/roles";
-import { getConfiguracion } from "@/lib/db/configuracion";
+import { getPermisosDeUsuario } from "@/lib/db/roles";
+import {
+  getUsuariosCached,
+  getClubesCached,
+  getEncargadosCached,
+  getEstudiantesCached,
+  getRolesCached,
+  getConfiguracionCached,
+} from "@/lib/db/cached";
 import { requireVista } from "@/lib/auth/guards";
 import { tienePermiso } from "@/lib/auth/permisos";
 import type { Permission } from "@/types";
@@ -19,12 +23,12 @@ export default async function AdminUsuariosPage() {
   const session = await requireVista("usuarios:gestionar");
 
   const [usuarios, clubes, encargados, estudiantes, roles, configuracion] = await Promise.all([
-    getUsuarios(),
-    getClubes(),
-    getEncargados(),
-    getEstudiantes(),
-    getRoles(),
-    getConfiguracion(),
+    getUsuariosCached(),
+    getClubesCached(),
+    getEncargadosCached(),
+    getEstudiantesCached(),
+    getRolesCached(),
+    getConfiguracionCached(),
   ]);
   const puedeEditarHorario = tienePermiso(session.user.permisos, "configuracion:editar");
   const idRolEncargado = roles.find((r) => r.nombre === "encargado_club")?.id_rol;

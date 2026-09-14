@@ -3,18 +3,19 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarCheck, ClipboardList, Percent, Search, Shapes } from "lucide-react";
+import { CalendarCheck, ClipboardList, Percent, Search, Shapes, Users } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExportAsistenciaModal } from "@/components/shared/ExportAsistenciaModal";
 import type { SesionEnriquecida } from "@/lib/reportes/asistencia";
 
 interface AttendanceManagerProps {
   sesiones: SesionEnriquecida[];
-  clubes: { id: number; nombre: string }[];
+  clubes: { id: number; nombre: string; miembros: number }[];
 }
 
 export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) {
@@ -22,6 +23,7 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
   const [estudianteQuery, setEstudianteQuery] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
+  const [modal, setModal] = useState<"con-registro" | "sin-registro" | null>(null);
 
   const filtradas = useMemo(() => {
     const q = estudianteQuery.trim().toLowerCase();
@@ -43,7 +45,29 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
   const totalPresentes = filtradas.reduce((acc, s) => acc + s.presentes, 0);
   const totalRegistros = filtradas.reduce((acc, s) => acc + s.total, 0);
   const porcentaje = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0;
-  const clubesConRegistro = new Set(filtradas.map((s) => s.clubId)).size;
+
+  const clubesConRegistroDetalle = useMemo(() => {
+    const porClub = new Map<number, { nombre: string; presentes: number; total: number; sesiones: number }>();
+    for (const s of filtradas) {
+      const actual = porClub.get(s.clubId) ?? { nombre: s.clubNombre, presentes: 0, total: 0, sesiones: 0 };
+      actual.presentes += s.presentes;
+      actual.total += s.total;
+      actual.sesiones += 1;
+      porClub.set(s.clubId, actual);
+    }
+    return Array.from(porClub.entries())
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [filtradas]);
+
+  const clubesSinRegistroDetalle = useMemo(() => {
+    const conRegistroIds = new Set(clubesConRegistroDetalle.map((c) => c.id));
+    return clubes
+      .filter((c) => (clubId === "todos" || String(c.id) === clubId) && !conRegistroIds.has(c.id))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [clubes, clubId, clubesConRegistroDetalle]);
+
+  const clubesConRegistro = clubesConRegistroDetalle.length;
 
   return (
     <div className="space-y-6">
@@ -59,9 +83,21 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Sesiones registradas" value={filtradas.length} icon={ClipboardList} accent="neutral" />
-        <StatCard label="Clubes con registro" value={clubesConRegistro} icon={Shapes} accent="neutral" />
+        <StatCard
+          label="Clubes con registro"
+          value={clubesConRegistro}
+          icon={Shapes}
+          accent="success"
+          onClick={() => setModal("con-registro")}
+        />
+        <StatCard
+          label="Clubes sin registro"
+          value={clubesSinRegistroDetalle.length}
+          icon={Users}
+          accent="warning"
+          onClick={() => setModal("sin-registro")}
+        />
         <StatCard label="Asistencia promedio" value={`${porcentaje}%`} icon={Percent} accent={porcentaje >= 80 ? "success" : "warning"} />
-        <StatCard label="Registros totales" value={totalRegistros} icon={CalendarCheck} accent="neutral" />
       </div>
 
       <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3 lg:grid-cols-4">
@@ -157,6 +193,59 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
           ))}
         </div>
       )}
+
+      <Dialog open={modal === "con-registro"} onOpenChange={(v) => !v && setModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Clubes con registro</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto px-6 py-6">
+            {clubesConRegistroDetalle.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Ningún club ha pasado lista con estos filtros.</p>
+            ) : (
+              clubesConRegistroDetalle.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{c.nombre}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {c.sesiones} sesión{c.sesiones === 1 ? "" : "es"} registrada{c.sesiones === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <Badge variant="success">
+                    {c.presentes} / {c.total} presentes
+                  </Badge>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={modal === "sin-registro"} onOpenChange={(v) => !v && setModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Clubes sin registro</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto px-6 py-6">
+            {clubesSinRegistroDetalle.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Todos los clubes han pasado lista con estos filtros.</p>
+            ) : (
+              clubesSinRegistroDetalle.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900"
+                >
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{c.nombre}</p>
+                  <Badge variant="warning">{c.miembros} miembro(s)</Badge>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

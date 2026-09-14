@@ -9,6 +9,7 @@ interface SesionExtra {
   clubIds: number[];
   clubPrincipalId: number | null;
   idEstudiante: number | null;
+  primerInicioSesion: boolean;
 }
 
 declare module "next-auth" {

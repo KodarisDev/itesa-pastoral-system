@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { InscripcionManager } from "@/components/club/InscripcionManager";
 import { getClubById } from "@/lib/db/clubes";
-import { getEstudiantes } from "@/lib/db/estudiantes";
+import { getEstudiantesCached } from "@/lib/db/cached";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export default async function ClubInscripcionPage() {
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
   if (!idClub) redirect("/login");
 
-  const [club, estudiantes] = await Promise.all([getClubById(idClub), getEstudiantes()]);
+  const [club, estudiantes] = await Promise.all([getClubById(idClub), getEstudiantesCached()]);
   if (!club) redirect("/login");
 
   return (

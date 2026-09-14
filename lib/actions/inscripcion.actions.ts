@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { inscripcionSchema, type InscripcionFormValues } from "@/lib/validations/inscripcion.schema";
 import { getClubById, contarMiembros } from "@/lib/db/clubes";
 import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso, requirePermisoEnClub } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
@@ -36,6 +37,8 @@ export async function inscribirEstudianteEnMiClub(estudianteId: number): Promise
     revalidatePath("/admin/estudiantes");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin");
+    revalidateTag(CACHE_TAGS.estudiantes);
+    revalidateTag(CACHE_TAGS.clubes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo inscribir al estudiante.");
@@ -68,6 +71,8 @@ export async function inscribirEstudiante(values: InscripcionFormValues): Promis
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
     revalidatePath("/admin");
+    revalidateTag(CACHE_TAGS.estudiantes);
+    revalidateTag(CACHE_TAGS.clubes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo inscribir al estudiante.");

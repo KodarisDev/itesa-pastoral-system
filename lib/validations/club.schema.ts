@@ -19,6 +19,10 @@ export const clubSchema = z.object({
   // Elegir encargado al crear/editar el club es opcional — se puede asignar
   // después desde Encargados.
   encargadoPrincipalId: z.coerce.number().int().positive().nullable().optional(),
+  encargadoSecundarioId: z.coerce.number().int().positive().nullable().optional(),
+}).refine((v) => !v.encargadoPrincipalId || !v.encargadoSecundarioId || v.encargadoPrincipalId !== v.encargadoSecundarioId, {
+  message: "El encargado secundario debe ser distinto del principal.",
+  path: ["encargadoSecundarioId"],
 });
 
 export type ClubFormValues = z.infer<typeof clubSchema>;

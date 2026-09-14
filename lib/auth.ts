@@ -37,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           clubIds: sesion.clubIds,
           clubPrincipalId: sesion.clubPrincipalId,
           idEstudiante: usuario.id_estudiante,
+          primerInicioSesion: usuario.primer_inicio_sesion,
         };
       },
     }),

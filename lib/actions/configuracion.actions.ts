@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import { configuracionSchema } from "@/lib/validations/configuracion.schema";
 import { guardarConfiguracion } from "@/lib/db/configuracion";
 import { requirePermiso } from "@/lib/auth/guards";
@@ -26,7 +27,10 @@ export async function actualizarConfiguracion(formData: FormData): Promise<Actio
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin");
     revalidatePath("/club");
+    revalidatePath("/club/asistencia");
     revalidatePath("/");
+    revalidatePath("/clubes");
+    revalidateTag(CACHE_TAGS.configuracion);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo guardar la configuración.");

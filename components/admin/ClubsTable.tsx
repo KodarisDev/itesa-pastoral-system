@@ -20,12 +20,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteClub } from "@/lib/actions/clubs.actions";
+import { cn } from "@/lib/utils";
 import type { Club, Usuario } from "@/types";
 
 interface ClubsTableProps {
   clubes: Club[];
   encargadosDisponibles: Usuario[];
   principalPorClub: Map<number, string>;
+  principalIdPorClub: Map<number, number>;
+  secundarioIdPorClub: Map<number, number>;
   miembrosPorClub: Map<number, number>;
   onSelect: (club: Club) => void;
 }
@@ -33,19 +36,29 @@ interface ClubsTableProps {
 interface ClubRowAccionesProps {
   club: Club;
   encargadoPrincipalId?: number | null;
+  encargadoSecundarioId?: number | null;
   encargadosDisponibles: Usuario[];
   isPending: boolean;
   onDelete: (clubId: number) => void;
   onSelect: (club: Club) => void;
 }
 
-function ClubRowAcciones({ club, encargadoPrincipalId, encargadosDisponibles, isPending, onDelete, onSelect }: ClubRowAccionesProps) {
+function ClubRowAcciones({
+  club,
+  encargadoPrincipalId,
+  encargadoSecundarioId,
+  encargadosDisponibles,
+  isPending,
+  onDelete,
+  onSelect,
+}: ClubRowAccionesProps) {
   return (
     <div className="flex items-center justify-end gap-1">
       <ClubFormDialog
         mode="editar"
         club={club}
         encargadoPrincipalId={encargadoPrincipalId}
+        encargadoSecundarioId={encargadoSecundarioId}
         encargados={encargadosDisponibles}
         trigger={
           <Button variant="ghost" size="icon" aria-label={`Editar ${club.nombre}`}>
@@ -79,7 +92,15 @@ function ClubRowAcciones({ club, encargadoPrincipalId, encargadosDisponibles, is
   );
 }
 
-export function ClubsTable({ clubes, encargadosDisponibles, principalPorClub, miembrosPorClub, onSelect }: ClubsTableProps) {
+export function ClubsTable({
+  clubes,
+  encargadosDisponibles,
+  principalPorClub,
+  principalIdPorClub,
+  secundarioIdPorClub,
+  miembrosPorClub,
+  onSelect,
+}: ClubsTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -111,13 +132,17 @@ export function ClubsTable({ clubes, encargadosDisponibles, principalPorClub, mi
           const encargadoNombre = principalPorClub.get(club.id_club);
           const miembros = miembrosPorClub.get(club.id_club) ?? 0;
           const lleno = club.capacidad != null && miembros >= club.capacidad;
+          const sinEncargado = !encargadoNombre;
           return (
             <div key={club.id_club} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
               <div className="flex items-start justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => onSelect(club)}
-                  className="text-left font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400"
+                  className={cn(
+                    "text-left font-medium hover:text-red-700 dark:hover:text-red-400",
+                    sinEncargado ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100",
+                  )}
                 >
                   {club.nombre}
                 </button>
@@ -131,6 +156,8 @@ export function ClubsTable({ clubes, encargadosDisponibles, principalPorClub, mi
               <div className="mt-3 border-t border-gray-100 pt-3 dark:border-neutral-800">
                 <ClubRowAcciones
                   club={club}
+                  encargadoPrincipalId={principalIdPorClub.get(club.id_club)}
+                  encargadoSecundarioId={secundarioIdPorClub.get(club.id_club)}
                   encargadosDisponibles={encargadosDisponibles}
                   isPending={isPending}
                   onDelete={handleDelete}
@@ -158,13 +185,17 @@ export function ClubsTable({ clubes, encargadosDisponibles, principalPorClub, mi
               const encargadoNombre = principalPorClub.get(club.id_club);
               const miembros = miembrosPorClub.get(club.id_club) ?? 0;
               const lleno = club.capacidad != null && miembros >= club.capacidad;
+              const sinEncargado = !encargadoNombre;
               return (
                 <TableRow key={club.id_club}>
                   <TableCell>
                     <button
                       type="button"
                       onClick={() => onSelect(club)}
-                      className="font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400"
+                      className={cn(
+                        "font-medium hover:text-red-700 dark:hover:text-red-400",
+                        sinEncargado ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100",
+                      )}
                     >
                       {club.nombre}
                     </button>
@@ -184,6 +215,8 @@ export function ClubsTable({ clubes, encargadosDisponibles, principalPorClub, mi
                   <TableCell className="text-right">
                     <ClubRowAcciones
                       club={club}
+                      encargadoPrincipalId={principalIdPorClub.get(club.id_club)}
+                      encargadoSecundarioId={secundarioIdPorClub.get(club.id_club)}
                       encargadosDisponibles={encargadosDisponibles}
                       isPending={isPending}
                       onDelete={handleDelete}

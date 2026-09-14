@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { parsearRosterCuarto, type ResultadoParseoRoster } from "@/lib/excel";
 import { upsertEstudiantePorMatricula, promoverEstudiantes } from "@/lib/db/estudiantes";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
@@ -78,6 +79,7 @@ export async function ejecutarPromocion(
     revalidatePath("/admin/estudiantes");
     revalidatePath("/admin/promocion");
     revalidatePath("/admin");
+    revalidateTag(CACHE_TAGS.estudiantes);
     return actionOk({ promovidos, desactivados, procesados: insertados.length, duplicadas: resultado.duplicadas });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "Ocurrió un error al ejecutar la promoción.");

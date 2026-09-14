@@ -1,10 +1,24 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/marca/LoginForm";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { auth } from "@/lib/auth";
 
-export default function LoginPage() {
+export const metadata: Metadata = {
+  title: "Acceso de encargados",
+  robots: { index: false, follow: false },
+};
+
+export default async function LoginPage() {
+  const session = await auth();
+  if (session) {
+    if (session.user.rolNombre === "pastoral" || session.user.rolNombre === "admin") redirect("/admin");
+    if (session.user.rolNombre === "encargado_club") redirect("/club");
+  }
+
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-neutral-50 px-6 py-16 transition-colors duration-300 dark:bg-neutral-950">
       <div className="absolute right-6 top-6">

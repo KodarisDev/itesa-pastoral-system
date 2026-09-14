@@ -3,23 +3,23 @@ import { Clock } from "lucide-react";
 import { Navbar } from "@/components/marca/Navbar";
 import { Footer } from "@/components/marca/Footer";
 import { ClubCard } from "@/components/marca/ClubCard";
-import { getClubes } from "@/lib/db/clubes";
 import { getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
-import { getConfiguracion } from "@/lib/db/configuracion";
+import { getClubesCached, getConfiguracionCached } from "@/lib/db/cached";
 import { formatearHorarioPastoral } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Clubes — Pastoral ITESA",
-  description: "Todos los clubes disponibles del área de Pastoral del Instituto Técnico Salesiano.",
+  title: "Clubes",
+  description: "Todos los clubes disponibles de la Pastoral Salesiana del Instituto Técnico Salesiano (ITESA).",
+  alternates: { canonical: "/clubes" },
 };
 
 export default async function ClubesPage() {
   const [clubes, miembrosPorClub, configuracion] = await Promise.all([
-    getClubes(),
+    getClubesCached(),
     getConteoMiembrosPorClub(),
-    getConfiguracion(),
+    getConfiguracionCached(),
   ]);
   const horario = formatearHorarioPastoral(configuracion);
 

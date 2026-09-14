@@ -1,9 +1,14 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { LayoutDashboard, Shapes, UserPlus, GraduationCap, Settings, ClipboardCheck, ArrowUpCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { DashboardShell, type DashboardNavItem } from "@/components/shared/DashboardShell";
 import type { Permission } from "@/types";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 const ICON_CLASS = "h-4 w-4";
 

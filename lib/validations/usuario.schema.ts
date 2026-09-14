@@ -3,7 +3,7 @@ import { PERMISOS_ASIGNABLES, type Permission } from "@/types";
 
 const PERMISOS_ASIGNABLES_VALORES = PERMISOS_ASIGNABLES.map((p) => p.permiso) as [Permission, ...Permission[]];
 
-const passwordRequeridaSchema = z
+export const passwordRequeridaSchema = z
   .string()
   .trim()
   .min(6, "La contraseña debe tener al menos 6 caracteres.")
@@ -71,3 +71,15 @@ export const usuarioAdminUpdateSchema = usuarioAdminSchema.extend({
 });
 
 export type UsuarioAdminUpdateFormValues = z.infer<typeof usuarioAdminUpdateSchema>;
+
+export const cambiarPasswordPropiaSchema = z
+  .object({
+    password: passwordRequeridaSchema,
+    confirmarPassword: passwordRequeridaSchema,
+  })
+  .refine((v) => v.password === v.confirmarPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmarPassword"],
+  });
+
+export type CambiarPasswordPropiaFormValues = z.infer<typeof cambiarPasswordPropiaSchema>;

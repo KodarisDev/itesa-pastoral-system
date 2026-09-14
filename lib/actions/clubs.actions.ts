@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import { clubSchema } from "@/lib/validations/club.schema";
 import {
   getClubById,
@@ -28,6 +29,7 @@ export async function createClub(formData: FormData): Promise<ActionResult<{ id:
       descripcion: formData.get("descripcion"),
       capacidad: formData.get("capacidadMaxima") ?? formData.get("capacidad"),
       encargadoPrincipalId: formData.get("encargadoUsuarioId") || null,
+      encargadoSecundarioId: formData.get("encargadoSecundarioUsuarioId") || null,
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Datos inválidos.");
@@ -49,8 +51,12 @@ export async function createClub(formData: FormData): Promise<ActionResult<{ id:
     if (parsed.data.encargadoPrincipalId) {
       await agregarEncargado(club.id_club, parsed.data.encargadoPrincipalId, true);
     }
+    if (parsed.data.encargadoSecundarioId) {
+      await agregarEncargado(club.id_club, parsed.data.encargadoSecundarioId, false);
+    }
 
     revalidatePath("/admin/clubes");
+    revalidateTag(CACHE_TAGS.clubes);
     return actionOk({ id: club.id_club });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el club.");
@@ -69,6 +75,7 @@ export async function updateClub(clubId: number, formData: FormData): Promise<Ac
       descripcion: formData.get("descripcion"),
       capacidad: formData.get("capacidadMaxima") ?? formData.get("capacidad"),
       encargadoPrincipalId: formData.get("encargadoUsuarioId") || null,
+      encargadoSecundarioId: formData.get("encargadoSecundarioUsuarioId") || null,
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Datos inválidos.");
@@ -89,16 +96,29 @@ export async function updateClub(clubId: number, formData: FormData): Promise<Ac
     });
 
     const encargados = await getEncargadosDeClub(clubId);
-    const principalActual = encargados.find((e) => e.encargado_principal);
     const principalNuevoId = parsed.data.encargadoPrincipalId ?? null;
+    const secundarioNuevoId = parsed.data.encargadoSecundarioId ?? null;
 
-    if (principalNuevoId !== (principalActual?.id_usuario ?? null)) {
-      if (principalActual) await quitarEncargado(clubId, principalActual.id_usuario);
-      if (principalNuevoId) await agregarEncargado(clubId, principalNuevoId, true);
+    // Quita cualquier encargado que no conserve su mismo rol — así un intercambio
+    // principal <-> secundario libera ambas filas antes de recrearlas.
+    for (const e of encargados) {
+      const mantieneMismoRol =
+        (e.encargado_principal && e.id_usuario === principalNuevoId) ||
+        (!e.encargado_principal && e.id_usuario === secundarioNuevoId);
+      if (!mantieneMismoRol) await quitarEncargado(clubId, e.id_usuario);
+    }
+
+    const encargadosActualizados = await getEncargadosDeClub(clubId);
+    if (principalNuevoId && !encargadosActualizados.some((e) => e.id_usuario === principalNuevoId && e.encargado_principal)) {
+      await agregarEncargado(clubId, principalNuevoId, true);
+    }
+    if (secundarioNuevoId && !encargadosActualizados.some((e) => e.id_usuario === secundarioNuevoId && !e.encargado_principal)) {
+      await agregarEncargado(clubId, secundarioNuevoId, false);
     }
 
     revalidatePath("/admin/clubes");
     revalidatePath(`/admin/clubes/${clubId}`);
+    revalidateTag(CACHE_TAGS.clubes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo actualizar el club.");
@@ -112,6 +132,7 @@ export async function deleteClub(clubId: number): Promise<ActionResult> {
     if (!club) return actionError("El club no existe.");
     await eliminarClub(clubId);
     revalidatePath("/admin/clubes");
+    revalidateTag(CACHE_TAGS.clubes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo eliminar el club.");
@@ -138,6 +159,8 @@ export async function removeMiembroDeClub(clubId: number, estudianteId: number):
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
     revalidatePath("/admin");
+    revalidateTag(CACHE_TAGS.clubes);
+    revalidateTag(CACHE_TAGS.estudiantes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo quitar al estudiante del club.");
@@ -173,6 +196,8 @@ export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId:
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
     revalidatePath("/admin");
+    revalidateTag(CACHE_TAGS.clubes);
+    revalidateTag(CACHE_TAGS.estudiantes);
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo cambiar de club al estudiante.");

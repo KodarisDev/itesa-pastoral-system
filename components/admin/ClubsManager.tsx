@@ -18,11 +18,17 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: Club
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
 
   const principalPorClub = new Map<number, string>();
+  const principalIdPorClub = new Map<number, number>();
+  const secundarioIdPorClub = new Map<number, number>();
   const miembrosPorClub = new Map<number, number>();
   for (const e of encargados) {
-    if (!e.encargado_principal) continue;
-    const nombre = usuariosMap.get(e.id_usuario)?.nombre;
-    if (nombre) principalPorClub.set(e.id_club, nombre);
+    if (e.encargado_principal) {
+      const nombre = usuariosMap.get(e.id_usuario)?.nombre;
+      if (nombre) principalPorClub.set(e.id_club, nombre);
+      principalIdPorClub.set(e.id_club, e.id_usuario);
+    } else {
+      secundarioIdPorClub.set(e.id_club, e.id_usuario);
+    }
   }
   for (const est of estudiantes) {
     if (est.id_club == null) continue;
@@ -43,6 +49,8 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: Club
         clubes={clubes}
         encargadosDisponibles={usuarios}
         principalPorClub={principalPorClub}
+        principalIdPorClub={principalIdPorClub}
+        secundarioIdPorClub={secundarioIdPorClub}
         miembrosPorClub={miembrosPorClub}
         onSelect={(c) => setSelectedId(c.id_club)}
       />

@@ -1,5 +1,5 @@
 import { PromocionManager } from "@/components/admin/PromocionManager";
-import { getEstudiantes } from "@/lib/db/estudiantes";
+import { getEstudiantesCached } from "@/lib/db/cached";
 import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminPromocionPage() {
   await requireVista("estudiantes:promover");
 
-  const estudiantes = await getEstudiantes();
+  const estudiantes = await getEstudiantesCached();
   const promovibles = estudiantes.filter((e) => e.curso && ["4", "5", "6"].includes(e.curso[0]));
 
   return (

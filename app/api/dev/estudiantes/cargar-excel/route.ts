@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { parsearRosterCompleto } from "@/lib/excel";
 import { upsertEstudiantePorMatricula } from "@/lib/db/estudiantes";
+import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso } from "@/lib/auth/guards";
 
 /**
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const insertados = await Promise.all(resultado.filas.map((fila) => upsertEstudiantePorMatricula(fila)));
+    revalidateTag(CACHE_TAGS.estudiantes);
 
     return NextResponse.json(
       {

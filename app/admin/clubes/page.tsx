@@ -2,10 +2,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClubsManager } from "@/components/admin/ClubsManager";
 import { ClubFormDialog } from "@/components/admin/ClubFormDialog";
-import { getClubes, getEncargados } from "@/lib/db/clubes";
-import { getUsuarios } from "@/lib/db/usuarios";
-import { getEstudiantes } from "@/lib/db/estudiantes";
-import { getRoles } from "@/lib/db/roles";
+import { getClubesCached, getEncargadosCached, getUsuariosCached, getEstudiantesCached, getRolesCached } from "@/lib/db/cached";
 import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +11,11 @@ export default async function AdminClubesPage() {
   await requireVista("clubes:ver");
 
   const [clubes, usuarios, estudiantes, encargados, roles] = await Promise.all([
-    getClubes(),
-    getUsuarios(),
-    getEstudiantes(),
-    getEncargados(),
-    getRoles(),
+    getClubesCached(),
+    getUsuariosCached(),
+    getEstudiantesCached(),
+    getEncargadosCached(),
+    getRolesCached(),
   ]);
   const idRolEncargado = roles.find((r) => r.nombre === "encargado_club")?.id_rol;
   const usuariosEncargados = usuarios.filter((u) => u.id_rol === idRolEncargado);

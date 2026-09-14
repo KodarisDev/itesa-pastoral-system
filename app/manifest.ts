@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ITESA Pastoral — Sistema de Clubes",
-    short_name: "Pastoral",
+    name: "Pastoral Salesiana del ITESA",
+    short_name: "Pastoral ITESA",
     description: "Gestión de clubes, inscripciones y asistencia del área de pastoral de ITESA.",
     start_url: "/",
     display: "standalone",

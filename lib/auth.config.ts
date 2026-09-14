@@ -17,7 +17,7 @@ export const authConfig: NextAuthConfig = {
   pages: { signIn: "/login" },
   providers: [],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.rolId = user.rolId;
         token.rolNombre = user.rolNombre;
@@ -25,6 +25,10 @@ export const authConfig: NextAuthConfig = {
         token.clubIds = user.clubIds;
         token.clubPrincipalId = user.clubPrincipalId;
         token.idEstudiante = user.idEstudiante;
+        token.primerInicioSesion = user.primerInicioSesion;
+      }
+      if (trigger === "update" && session && typeof session.primerInicioSesion === "boolean") {
+        token.primerInicioSesion = session.primerInicioSesion;
       }
       return token;
     },
@@ -36,6 +40,7 @@ export const authConfig: NextAuthConfig = {
       session.user.clubIds = (token.clubIds as number[] | undefined) ?? [];
       session.user.clubPrincipalId = (token.clubPrincipalId as number | null) ?? null;
       session.user.idEstudiante = (token.idEstudiante as number | null) ?? null;
+      session.user.primerInicioSesion = (token.primerInicioSesion as boolean | undefined) ?? false;
       return session;
     },
   },
