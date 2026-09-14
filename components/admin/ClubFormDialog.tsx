@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { clubSchema, clubCreateSchema } from "@/lib/validations/club.schema";
+import { clubSchema } from "@/lib/validations/club.schema";
 import { createClub, updateClub } from "@/lib/actions/clubs.actions";
 import { cn } from "@/lib/utils";
 import type { Club, Usuario } from "@/types";
@@ -48,14 +48,13 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
       capacidad: formData.get("capacidadMaxima"),
       encargadoPrincipalId: encargadoId || null,
     };
-    const parsed = (mode === "crear" ? clubCreateSchema : clubSchema).safeParse(raw);
+    const parsed = clubSchema.safeParse(raw);
     if (!parsed.success) {
       const flat = parsed.error.flatten().fieldErrors;
       setFieldErrors({
         nombre: flat.nombre?.[0] ?? "",
         descripcion: flat.descripcion?.[0] ?? "",
         capacidad: flat.capacidad?.[0] ?? "",
-        encargadoPrincipalId: flat.encargadoPrincipalId?.[0] ?? "",
       });
       return;
     }
@@ -82,7 +81,7 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
           <DialogTitle>{mode === "crear" ? "Nuevo club" : `Editar ${club?.nombre}`}</DialogTitle>
           <DialogDescription>
             {mode === "crear"
-              ? "Completa la información del club. Todo club debe tener un encargado — créalo primero en Encargados si todavía no existe."
+              ? "Completa la información del club. Puedes asignar un encargado ahora o después, desde Encargados."
               : "Actualiza la información del club."}
           </DialogDescription>
         </DialogHeader>
@@ -147,13 +146,13 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
             </div>
 
             <div>
-              <Label htmlFor="encargadoUsuarioId">Encargado principal{mode === "crear" && " *"}</Label>
+              <Label htmlFor="encargadoUsuarioId">Encargado principal (opcional)</Label>
               <Select value={encargadoId || "none"} onValueChange={(v) => setEncargadoId(v === "none" ? "" : v)}>
-                <SelectTrigger id="encargadoUsuarioId" invalid={!!fieldErrors.encargadoPrincipalId}>
-                  <SelectValue placeholder="Selecciona un encargado" />
+                <SelectTrigger id="encargadoUsuarioId">
+                  <SelectValue placeholder="Sin encargado asignado" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mode === "editar" && <SelectItem value="none">Sin encargado asignado</SelectItem>}
+                  <SelectItem value="none">Sin encargado asignado</SelectItem>
                   {encargados.map((u) => (
                     <SelectItem key={u.id_usuario} value={String(u.id_usuario)}>
                       {u.nombre}
@@ -161,17 +160,9 @@ export function ClubFormDialog({ mode, club, encargadoPrincipalId, encargados, t
                   ))}
                 </SelectContent>
               </Select>
-              {fieldErrors.encargadoPrincipalId ? (
-                <p role="alert" className="mt-1.5 text-sm text-destructive">
-                  {fieldErrors.encargadoPrincipalId}
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  {mode === "crear"
-                    ? "¿No aparece quién buscas? Créalo primero en la sección Encargados."
-                    : "Para agregar un encargado secundario o crear uno nuevo, ve a la sección Encargados."}
-                </p>
-              )}
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                Para agregar un encargado secundario o crear uno nuevo, ve a la sección Encargados.
+              </p>
             </div>
           </div>
 

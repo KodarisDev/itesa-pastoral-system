@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Check, Copy, KeyRound, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { EditAdminDialog } from "@/components/admin/EditAdminDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteUsuarioEncargado, resetPasswordEncargado } from "@/lib/actions/users.actions";
+import { deleteUsuarioEncargado } from "@/lib/actions/users.actions";
 import { PERMISOS_ASIGNABLES, type Permission, type Usuario } from "@/types";
 
 interface AdminUsersManagementTableProps {
@@ -46,19 +46,6 @@ function PermisosBadges({ permisos }: { permisos: Permission[] }) {
 export function AdminUsersManagementTable({ administradores, permisosPorUsuario }: AdminUsersManagementTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [nuevaPassword, setNuevaPassword] = useState<{ username: string; password: string } | null>(null);
-  const [copiado, setCopiado] = useState(false);
-
-  function handleReset(usuario: Usuario) {
-    startTransition(async () => {
-      const res = await resetPasswordEncargado(usuario.id_usuario);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      setNuevaPassword({ username: usuario.usuario, password: res.data.password });
-    });
-  }
 
   function handleDelete(usuarioId: number) {
     startTransition(async () => {
@@ -70,13 +57,6 @@ export function AdminUsersManagementTable({ administradores, permisosPorUsuario 
       toast.success("Administrador eliminado.");
       router.refresh();
     });
-  }
-
-  async function copiar() {
-    if (!nuevaPassword) return;
-    await navigator.clipboard.writeText(nuevaPassword.password);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
   }
 
   if (administradores.length === 0) {
@@ -106,9 +86,6 @@ export function AdminUsersManagementTable({ administradores, permisosPorUsuario 
               </div>
               <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-100 pt-3 dark:border-neutral-800">
                 <EditAdminDialog usuario={u} permisosActuales={permisos} />
-                <Button variant="ghost" size="icon" aria-label={`Restablecer contraseña de ${u.nombre}`} onClick={() => handleReset(u)}>
-                  <KeyRound className="h-4 w-4" aria-hidden="true" />
-                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" aria-label={`Eliminar a ${u.nombre}`}>
@@ -156,9 +133,6 @@ export function AdminUsersManagementTable({ administradores, permisosPorUsuario 
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <EditAdminDialog usuario={u} permisosActuales={permisos} />
-                      <Button variant="ghost" size="icon" aria-label={`Restablecer contraseña de ${u.nombre}`} onClick={() => handleReset(u)}>
-                        <KeyRound className="h-4 w-4" aria-hidden="true" />
-                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" aria-label={`Eliminar a ${u.nombre}`}>
@@ -186,32 +160,6 @@ export function AdminUsersManagementTable({ administradores, permisosPorUsuario 
           </TableBody>
         </Table>
       </div>
-
-      <AlertDialog open={!!nuevaPassword} onOpenChange={(v) => !v && setNuevaPassword(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Contraseña restablecida</AlertDialogTitle>
-            <AlertDialogDescription>Guarda esta contraseña ahora: no se volverá a mostrar.</AlertDialogDescription>
-          </AlertDialogHeader>
-          {nuevaPassword && (
-            <div className="mx-6 my-6 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 font-mono text-sm dark:border-neutral-700 dark:bg-neutral-900">
-              <p>
-                Usuario: <span className="font-semibold">{nuevaPassword.username}</span>
-              </p>
-              <p>
-                Nueva contraseña: <span className="font-semibold">{nuevaPassword.password}</span>
-              </p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={copiar}>
-              {copiado ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-              {copiado ? "Copiado" : "Copiar"}
-            </Button>
-            <AlertDialogAction onClick={() => setNuevaPassword(null)}>Listo</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -18,19 +18,17 @@ import {
 import { getClubById, agregarEncargado, quitarEncargado, getClubesDeUsuario } from "@/lib/db/clubes";
 import { getEstudianteByMatricula, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { getRoles, guardarPermisosDeUsuario } from "@/lib/db/roles";
-import { generarPassword } from "@/lib/utils";
 import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
-export async function createUsuarioEncargado(formData: FormData): Promise<
-  ActionResult<{ username: string; password: string }>
-> {
+export async function createUsuarioEncargado(formData: FormData): Promise<ActionResult<{ username: string }>> {
   try {
     await requirePermiso("usuarios:gestionar");
 
     const parsed = usuarioEncargadoSchema.safeParse({
       nombre: formData.get("nombre"),
       username: formData.get("username"),
+      password: formData.get("password"),
       idRol: formData.get("idRol"),
       clubId: formData.get("clubId"),
       principal: formData.get("principal") === "true",
@@ -57,14 +55,12 @@ export async function createUsuarioEncargado(formData: FormData): Promise<
       idEstudiante = estudiante.id_estudiante;
     }
 
-    const password = generarPassword();
-
     const usuario = await crearUsuario({
       id_rol: parsed.data.idRol,
       id_estudiante: idEstudiante,
       nombre: parsed.data.nombre,
       usuario: parsed.data.username,
-      password_hash: hashPassword(password),
+      password_hash: hashPassword(parsed.data.password),
       activo: true,
     });
 
@@ -81,7 +77,7 @@ export async function createUsuarioEncargado(formData: FormData): Promise<
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
-    return actionOk({ username: parsed.data.username, password });
+    return actionOk({ username: parsed.data.username });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el usuario.");
   }
@@ -178,20 +174,6 @@ export async function deleteUsuarioEncargado(usuarioId: number): Promise<ActionR
   }
 }
 
-export async function resetPasswordEncargado(usuarioId: number): Promise<ActionResult<{ password: string }>> {
-  try {
-    await requirePermiso("usuarios:gestionar");
-    const usuario = await getUsuarioById(usuarioId);
-    if (!usuario) return actionError("El usuario no existe.");
-    const password = generarPassword();
-    await actualizarUsuario(usuarioId, { password_hash: hashPassword(password) });
-    revalidatePath("/admin/usuarios");
-    return actionOk({ password });
-  } catch (err) {
-    return actionError(err instanceof Error ? err.message : "No se pudo restablecer la contraseña.");
-  }
-}
-
 async function idRolAdmin(): Promise<number> {
   const roles = await getRoles();
   const id = roles.find((r) => r.nombre === "admin")?.id_rol;
@@ -199,15 +181,14 @@ async function idRolAdmin(): Promise<number> {
   return id;
 }
 
-export async function createUsuarioAdmin(formData: FormData): Promise<
-  ActionResult<{ username: string; password: string }>
-> {
+export async function createUsuarioAdmin(formData: FormData): Promise<ActionResult<{ username: string }>> {
   try {
     await requirePermiso("usuarios:gestionar");
 
     const parsed = usuarioAdminSchema.safeParse({
       nombre: formData.get("nombre"),
       username: formData.get("username"),
+      password: formData.get("password"),
       permisos: formData.getAll("permisos"),
     });
     if (!parsed.success) {
@@ -219,19 +200,18 @@ export async function createUsuarioAdmin(formData: FormData): Promise<
       return actionError("Ese nombre de usuario ya está en uso, elige otro.");
     }
 
-    const password = generarPassword();
     const usuario = await crearUsuario({
       id_rol: await idRolAdmin(),
       id_estudiante: null,
       nombre: parsed.data.nombre,
       usuario: parsed.data.username,
-      password_hash: hashPassword(password),
+      password_hash: hashPassword(parsed.data.password),
       activo: true,
     });
     await guardarPermisosDeUsuario(usuario.id_usuario, parsed.data.permisos);
 
     revalidatePath("/admin/usuarios");
-    return actionOk({ username: parsed.data.username, password });
+    return actionOk({ username: parsed.data.username });
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo crear el administrador.");
   }

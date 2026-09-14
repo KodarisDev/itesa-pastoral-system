@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Check, Copy, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +27,12 @@ export function CreateAdminDialog() {
   const [isPending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [permisos, setPermisos] = useState<Permission[]>([]);
-  const [credenciales, setCredenciales] = useState<{ username: string; password: string } | null>(null);
-  const [copiado, setCopiado] = useState(false);
+  const [password, setPassword] = useState("");
 
   function reset() {
     setFieldErrors({});
     setPermisos([]);
-    setCredenciales(null);
-    setCopiado(false);
+    setPassword("");
   }
 
   function togglePermiso(permiso: Permission, marcado: boolean) {
@@ -47,6 +45,7 @@ export function CreateAdminDialog() {
     const parsed = usuarioAdminSchema.safeParse({
       nombre: formData.get("nombre"),
       username: formData.get("username"),
+      password,
       permisos: formData.getAll("permisos"),
     });
     if (!parsed.success) {
@@ -54,10 +53,12 @@ export function CreateAdminDialog() {
       setFieldErrors({
         nombre: flat.nombre?.[0] ?? "",
         username: flat.username?.[0] ?? "",
+        password: flat.password?.[0] ?? "",
       });
       return;
     }
     setFieldErrors({});
+    formData.set("password", password);
 
     startTransition(async () => {
       const res = await createUsuarioAdmin(formData);
@@ -65,16 +66,10 @@ export function CreateAdminDialog() {
         toast.error(res.error);
         return;
       }
-      setCredenciales(res.data);
+      toast.success(`Administrador "${res.data.username}" creado correctamente.`);
+      setOpen(false);
       router.refresh();
     });
-  }
-
-  async function copiar() {
-    if (!credenciales) return;
-    await navigator.clipboard.writeText(`Usuario: ${credenciales.username}\nContraseña: ${credenciales.password}`);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
   }
 
   return (
@@ -92,77 +87,68 @@ export function CreateAdminDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent>
-        {!credenciales ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Nuevo administrador</DialogTitle>
-              <DialogDescription>
-                Crea una cuenta con acceso al panel de Pastoral, sin ligarla a un club. Elige exactamente qué puede hacer.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 px-6 py-6">
-                <div>
-                  <Label htmlFor="admin-nombre">Nombre completo</Label>
-                  <Input id="admin-nombre" name="nombre" invalid={!!fieldErrors.nombre} placeholder="Ej. Yudelka Peña" />
-                  {fieldErrors.nombre && (
-                    <p role="alert" className="mt-1.5 text-sm text-destructive">
-                      {fieldErrors.nombre}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="admin-username">Usuario</Label>
-                  <Input id="admin-username" name="username" invalid={!!fieldErrors.username} placeholder="Ej. yudelka.pena" />
-                  {fieldErrors.username && (
-                    <p role="alert" className="mt-1.5 text-sm text-destructive">
-                      {fieldErrors.username}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label>Permisos</Label>
-                  <div className="mt-1.5 rounded-xl border border-gray-200 p-3 dark:border-neutral-700">
-                    <PermisosFieldset idPrefix="crear-admin" seleccionados={permisos} onToggle={togglePermiso} />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  Crear administrador
-                </Button>
-              </DialogFooter>
-            </form>
-          </>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle>Cuenta creada</DialogTitle>
-              <DialogDescription>
-                Guarda esta contraseña ahora: no se volverá a mostrar. Compártela de forma segura con el administrador.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="mx-6 my-6 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 font-mono text-sm dark:border-neutral-700 dark:bg-neutral-900">
-              <p>
-                Usuario: <span className="font-semibold">{credenciales.username}</span>
-              </p>
-              <p>
-                Contraseña: <span className="font-semibold">{credenciales.password}</span>
+        <DialogHeader>
+          <DialogTitle>Nuevo administrador</DialogTitle>
+          <DialogDescription>
+            Crea una cuenta con acceso al panel de Pastoral, sin ligarla a un club. Elige exactamente qué puede hacer.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 px-6 py-6">
+            <div>
+              <Label htmlFor="admin-nombre">Nombre completo</Label>
+              <Input id="admin-nombre" name="nombre" invalid={!!fieldErrors.nombre} placeholder="Ej. Yudelka Peña" />
+              {fieldErrors.nombre && (
+                <p role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.nombre}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="admin-username">Usuario</Label>
+              <Input id="admin-username" name="username" invalid={!!fieldErrors.username} placeholder="Ej. yudelka.pena" />
+              {fieldErrors.username && (
+                <p role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.username}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="admin-password">Contraseña</Label>
+              <Input
+                id="admin-password"
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                invalid={!!fieldErrors.password}
+                placeholder="Mínimo 6 caracteres"
+              />
+              {fieldErrors.password && (
+                <p role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.password}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                Compártela de forma segura con el administrador — no se genera ninguna automáticamente.
               </p>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={copiar}>
-                {copiado ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-                {copiado ? "Copiado" : "Copiar"}
-              </Button>
-              <Button onClick={() => setOpen(false)}>Listo</Button>
-            </DialogFooter>
-          </>
-        )}
+            <div>
+              <Label>Permisos</Label>
+              <div className="mt-1.5 rounded-xl border border-gray-200 p-3 dark:border-neutral-700">
+                <PermisosFieldset idPrefix="crear-admin" seleccionados={permisos} onToggle={togglePermiso} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              Crear administrador
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

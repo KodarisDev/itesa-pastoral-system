@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Clock } from "lucide-react";
 import { Navbar } from "@/components/marca/Navbar";
 import { Footer } from "@/components/marca/Footer";
 import { ClubCard } from "@/components/marca/ClubCard";
 import { getClubes } from "@/lib/db/clubes";
 import { getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
+import { getConfiguracion } from "@/lib/db/configuracion";
+import { formatearHorarioPastoral } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +16,12 @@ export const metadata: Metadata = {
 };
 
 export default async function ClubesPage() {
-  const [clubes, miembrosPorClub] = await Promise.all([getClubes(), getConteoMiembrosPorClub()]);
+  const [clubes, miembrosPorClub, configuracion] = await Promise.all([
+    getClubes(),
+    getConteoMiembrosPorClub(),
+    getConfiguracion(),
+  ]);
+  const horario = formatearHorarioPastoral(configuracion);
 
   return (
     <main id="contenido" className="bg-white text-neutral-950">
@@ -29,6 +37,12 @@ export default async function ClubesPage() {
           <p className="mt-3 text-balance text-sm leading-relaxed text-neutral-500">
             Explora la lista completa de clubes activos este ciclo escolar y su cupo disponible.
           </p>
+          {horario && (
+            <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-4 py-1.5 text-xs font-medium text-neutral-600">
+              <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Hora de pastoral: {horario}
+            </p>
+          )}
         </div>
 
         {clubes.length === 0 ? (

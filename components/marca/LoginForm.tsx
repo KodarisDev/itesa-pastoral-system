@@ -45,7 +45,7 @@ export function LoginForm() {
 
       if (callbackUrl && callbackUrl.startsWith("/") ) {
         router.push(callbackUrl);
-      } else if (rolNombre === "pastoral") {
+      } else if (rolNombre === "pastoral" || rolNombre === "admin") {
         router.push("/admin");
       } else if (rolNombre === "encargado_club") {
         router.push("/club");

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Check, Copy, KeyRound, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { EditEncargadoDialog } from "@/components/admin/EditEncargadoDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteUsuarioEncargado, resetPasswordEncargado } from "@/lib/actions/users.actions";
+import { deleteUsuarioEncargado } from "@/lib/actions/users.actions";
 import type { Club, Encargado, Estudiante, Usuario } from "@/types";
 
 interface UsersManagementTableProps {
@@ -35,11 +35,10 @@ interface UserRowAccionesProps {
   clubActualId: number | null;
   principalActual: boolean;
   estudianteVinculado: Estudiante | null;
-  onReset: (usuario: Usuario) => void;
   onDelete: (usuarioId: number) => void;
 }
 
-function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estudianteVinculado, onReset, onDelete }: UserRowAccionesProps) {
+function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estudianteVinculado, onDelete }: UserRowAccionesProps) {
   return (
     <div className="flex items-center justify-end gap-1">
       <EditEncargadoDialog
@@ -49,9 +48,6 @@ function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estud
         principalActual={principalActual}
         estudianteVinculado={estudianteVinculado}
       />
-      <Button variant="ghost" size="icon" aria-label={`Restablecer contraseña de ${usuario.nombre}`} onClick={() => onReset(usuario)}>
-        <KeyRound className="h-4 w-4" aria-hidden="true" />
-      </Button>
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="ghost" size="icon" aria-label={`Eliminar a ${usuario.nombre}`}>
@@ -76,20 +72,7 @@ function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estud
 export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, estudiantesMap }: UsersManagementTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [nuevaPassword, setNuevaPassword] = useState<{ username: string; password: string } | null>(null);
-  const [copiado, setCopiado] = useState(false);
   const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
-
-  function handleReset(usuario: Usuario) {
-    startTransition(async () => {
-      const res = await resetPasswordEncargado(usuario.id_usuario);
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      setNuevaPassword({ username: usuario.usuario, password: res.data.password });
-    });
-  }
 
   function handleDelete(usuarioId: number) {
     startTransition(async () => {
@@ -101,13 +84,6 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
       toast.success("Encargado eliminado.");
       router.refresh();
     });
-  }
-
-  async function copiar() {
-    if (!nuevaPassword) return;
-    await navigator.clipboard.writeText(nuevaPassword.password);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
   }
 
   if (encargados.length === 0) {
@@ -143,7 +119,6 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
                   clubActualId={encargo?.id_club ?? null}
                   principalActual={encargo?.encargado_principal ?? false}
                   estudianteVinculado={estudiante}
-                  onReset={handleReset}
                   onDelete={handleDelete}
                 />
               </div>
@@ -186,7 +161,6 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
                       clubActualId={encargo?.id_club ?? null}
                       principalActual={encargo?.encargado_principal ?? false}
                       estudianteVinculado={estudiante}
-                      onReset={handleReset}
                       onDelete={handleDelete}
                     />
                   </TableCell>
@@ -196,34 +170,6 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
           </TableBody>
         </Table>
       </div>
-
-      <AlertDialog open={!!nuevaPassword} onOpenChange={(v) => !v && setNuevaPassword(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Contraseña restablecida</AlertDialogTitle>
-            <AlertDialogDescription>
-              Guarda esta contraseña ahora: no se volverá a mostrar.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {nuevaPassword && (
-            <div className="mx-6 my-6 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 font-mono text-sm dark:border-neutral-700 dark:bg-neutral-900">
-              <p>
-                Usuario: <span className="font-semibold">{nuevaPassword.username}</span>
-              </p>
-              <p>
-                Nueva contraseña: <span className="font-semibold">{nuevaPassword.password}</span>
-              </p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={copiar}>
-              {copiado ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-              {copiado ? "Copiado" : "Copiar"}
-            </Button>
-            <AlertDialogAction onClick={() => setNuevaPassword(null)}>Listo</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

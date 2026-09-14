@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { clubSchema, clubCreateSchema } from "@/lib/validations/club.schema";
+import { clubSchema } from "@/lib/validations/club.schema";
 import {
   getClubById,
   crearClub,
@@ -23,7 +23,7 @@ export async function createClub(formData: FormData): Promise<ActionResult<{ id:
   try {
     await requirePermiso("clubes:gestionar");
 
-    const parsed = clubCreateSchema.safeParse({
+    const parsed = clubSchema.safeParse({
       nombre: formData.get("nombre"),
       descripcion: formData.get("descripcion"),
       capacidad: formData.get("capacidadMaxima") ?? formData.get("capacidad"),
@@ -46,7 +46,9 @@ export async function createClub(formData: FormData): Promise<ActionResult<{ id:
       await actualizarClub(club.id_club, { foto: fotoUrl });
     }
 
-    await agregarEncargado(club.id_club, parsed.data.encargadoPrincipalId, true);
+    if (parsed.data.encargadoPrincipalId) {
+      await agregarEncargado(club.id_club, parsed.data.encargadoPrincipalId, true);
+    }
 
     revalidatePath("/admin/clubes");
     return actionOk({ id: club.id_club });

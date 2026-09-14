@@ -123,7 +123,10 @@ export interface Database {
           nombre: string;
           apellido: string;
           matricula: string;
-          curso: "4to" | "5to" | "6to" | null;
+          // Texto libre a propósito: el catálogo real de 21 cursos (4A..6G) vive
+          // en types/estudiante.ts (CURSOS) y se valida en la capa de aplicación.
+          curso: string | null;
+          numero: number | null;
           activo: boolean;
           creado_en: string;
         };
@@ -134,6 +137,7 @@ export interface Database {
           apellido: string;
           matricula: string;
           curso?: string | null;
+          numero?: number | null;
           activo?: boolean;
           creado_en?: string;
         };
@@ -170,7 +174,7 @@ export interface Database {
           id_estudiante: number;
           id_club: number | null;
           club_nombre: string;
-          curso: "4to" | "5to" | "6to" | null;
+          curso: string | null;
           motivo: "promocion" | "egreso" | "manual";
           creado_en: string;
         };

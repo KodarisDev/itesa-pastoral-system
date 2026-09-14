@@ -6,6 +6,7 @@ import { StatCard } from "@/components/admin/StatCard";
 import { getClubById } from "@/lib/db/clubes";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 import { getAsistenciaPorClub } from "@/lib/db/asistencia";
+import { getConfiguracion } from "@/lib/db/configuracion";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,11 @@ export default async function ClubHomePage() {
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
   if (!idClub) redirect("/login");
 
-  const [club, miembros, filas] = await Promise.all([
+  const [club, miembros, filas, configuracion] = await Promise.all([
     getClubById(idClub),
     getEstudiantesPorClub(idClub),
     getAsistenciaPorClub(idClub),
+    getConfiguracion(),
   ]);
   if (!club) redirect("/login");
 
@@ -32,7 +34,7 @@ export default async function ClubHomePage() {
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Bienvenido/a, {session?.user.name}.</p>
       </div>
 
-      <ClubHeaderCard club={club} miembrosActuales={miembros.length} />
+      <ClubHeaderCard club={club} miembrosActuales={miembros.length} configuracion={configuracion} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Miembros actuales" value={miembros.length} icon={Users} accent="neutral" />

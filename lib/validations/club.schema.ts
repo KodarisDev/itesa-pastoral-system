@@ -16,14 +16,9 @@ export const clubSchema = z.object({
     .int("El cupo debe ser un número entero.")
     .min(1, "El club debe aceptar al menos 1 estudiante.")
     .max(500, "Ese cupo parece demasiado alto, verifica el número."),
+  // Elegir encargado al crear/editar el club es opcional — se puede asignar
+  // después desde Encargados.
   encargadoPrincipalId: z.coerce.number().int().positive().nullable().optional(),
 });
 
 export type ClubFormValues = z.infer<typeof clubSchema>;
-
-/** Un club nuevo debe nacer con un encargado — no se puede crear "huérfano". */
-export const clubCreateSchema = clubSchema.extend({
-  encargadoPrincipalId: z.coerce.number().int().positive("Selecciona quién va a dirigir este club."),
-});
-
-export type ClubCreateFormValues = z.infer<typeof clubCreateSchema>;

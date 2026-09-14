@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { Estudiante } from "@/types";
+import type { FilaRoster } from "@/lib/excel";
 
 export async function getEstudiantes(): Promise<Estudiante[]> {
   const { data, error } = await getSupabaseAdmin()
@@ -90,4 +91,70 @@ export async function actualizarEstudiante(
     .single();
   if (error) throw new Error(error.message);
   return data;
+}
+
+/**
+ * Da de alta o actualiza un estudiante por matrícula (matrícula = id estable
+ * del estudiante). Si ya existe, actualiza nombre/apellido/curso/numero pero
+ * NO toca `activo` ni `id_club` — igual que el sistema hermano, para no
+ * reactivar ni desvincular de su club a alguien solo por reaparecer en un
+ * listado.
+ */
+export async function upsertEstudiantePorMatricula(fila: FilaRoster): Promise<Estudiante> {
+  const existente = await getEstudianteByMatricula(fila.matricula);
+  if (existente) {
+    return actualizarEstudiante(existente.id_estudiante, {
+      nombre: fila.nombre,
+      apellido: fila.apellido,
+      curso: fila.curso,
+      numero: fila.numero,
+    });
+  }
+  return crearEstudiante({
+    nombre: fila.nombre,
+    apellido: fila.apellido,
+    curso: fila.curso,
+    numero: fila.numero,
+    matricula: fila.matricula,
+    id_club: null,
+    activo: true,
+  });
+}
+
+function calcularCursoPromovido(cursoActual: string | null): string | null {
+  const curso = (cursoActual ?? "").trim();
+  const grado = curso[0];
+  const seccion = curso.slice(1);
+  if (grado === "4") return `5${seccion}`;
+  if (grado === "5") return `6${seccion}`;
+  if (grado === "6") return "ExAlumno";
+  return cursoActual;
+}
+
+/**
+ * Promoción anual: todo estudiante activo de 4to/5to/6to sube de grado
+ * conservando su sección (4A→5A, 5A→6A); los de 6to pasan a "ExAlumno" y
+ * quedan inactivos. Los `idsNoPasaron` no se promueven — solo quedan
+ * inactivos, conservando su curso actual. Réplica exacta de la lógica de
+ * Itesa-Psychology-System (pasar-de-curso).
+ */
+export async function promoverEstudiantes(idsNoPasaron: number[]): Promise<{ promovidos: number; desactivados: number }> {
+  const activos = await getEstudiantes();
+  const promovibles = activos.filter((e) => e.curso && ["4", "5", "6"].includes(e.curso[0]) && !idsNoPasaron.includes(e.id_estudiante));
+
+  await Promise.all(
+    promovibles.map((e) => {
+      const cursoNuevo = calcularCursoPromovido(e.curso);
+      return actualizarEstudiante(e.id_estudiante, {
+        curso: cursoNuevo,
+        ...(cursoNuevo === "ExAlumno" ? { activo: false } : {}),
+      });
+    }),
+  );
+
+  if (idsNoPasaron.length > 0) {
+    await Promise.all(idsNoPasaron.map((id) => actualizarEstudiante(id, { activo: false })));
+  }
+
+  return { promovidos: promovibles.length, desactivados: idsNoPasaron.length };
 }

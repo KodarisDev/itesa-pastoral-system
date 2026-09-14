@@ -1,8 +1,18 @@
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import type { Club } from "@/types";
+import { formatearHorarioPastoral } from "@/lib/utils";
+import type { Club, Configuracion } from "@/types";
 
-export function ClubHeaderCard({ club, miembrosActuales }: { club: Club; miembrosActuales: number }) {
+export function ClubHeaderCard({
+  club,
+  miembrosActuales,
+  configuracion,
+}: {
+  club: Club;
+  miembrosActuales: number;
+  configuracion?: Configuracion | null;
+}) {
+  const horario = configuracion ? formatearHorarioPastoral(configuracion) : null;
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row">
       <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-100 dark:bg-neutral-800">
@@ -19,6 +29,7 @@ export function ClubHeaderCard({ club, miembrosActuales }: { club: Club; miembro
           <Badge variant="secondary">
             {miembrosActuales} / {club.capacidad ?? "∞"} miembros
           </Badge>
+          {horario && <Badge variant="outline">Hora de pastoral: {horario}</Badge>}
         </div>
       </div>
     </div>

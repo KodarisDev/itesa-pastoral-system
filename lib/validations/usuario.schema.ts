@@ -3,6 +3,14 @@ import { PERMISOS_ASIGNABLES, type Permission } from "@/types";
 
 const PERMISOS_ASIGNABLES_VALORES = PERMISOS_ASIGNABLES.map((p) => p.permiso) as [Permission, ...Permission[]];
 
+const passwordRequeridaSchema = z
+  .string()
+  .trim()
+  .min(6, "La contraseña debe tener al menos 6 caracteres.")
+  .max(72, "La contraseña es demasiado larga.");
+
+const passwordOpcionalSchema = passwordRequeridaSchema.optional().or(z.literal(""));
+
 export const usuarioEncargadoSchema = z.object({
   nombre: z
     .string()
@@ -16,6 +24,7 @@ export const usuarioEncargadoSchema = z.object({
     .min(3, "El usuario debe tener al menos 3 caracteres.")
     .max(40, "El usuario es demasiado largo.")
     .regex(/^[a-z0-9._-]+$/, "El usuario solo puede tener letras minúsculas, números, puntos, guiones y guiones bajos."),
+  password: passwordRequeridaSchema,
   idRol: z.coerce.number().int().positive("Selecciona el rol de esta cuenta."),
   clubId: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
@@ -33,13 +42,7 @@ export const usuarioEncargadoSchema = z.object({
 export type UsuarioEncargadoFormValues = z.infer<typeof usuarioEncargadoSchema>;
 
 export const usuarioEncargadoUpdateSchema = usuarioEncargadoSchema.extend({
-  password: z
-    .string()
-    .trim()
-    .min(6, "La contraseña debe tener al menos 6 caracteres.")
-    .max(72, "La contraseña es demasiado larga.")
-    .optional()
-    .or(z.literal("")),
+  password: passwordOpcionalSchema,
 });
 
 export type UsuarioEncargadoUpdateFormValues = z.infer<typeof usuarioEncargadoUpdateSchema>;
@@ -57,19 +60,14 @@ export const usuarioAdminSchema = z.object({
     .min(3, "El usuario debe tener al menos 3 caracteres.")
     .max(40, "El usuario es demasiado largo.")
     .regex(/^[a-z0-9._-]+$/, "El usuario solo puede tener letras minúsculas, números, puntos, guiones y guiones bajos."),
+  password: passwordRequeridaSchema,
   permisos: z.array(z.enum(PERMISOS_ASIGNABLES_VALORES)).default([]),
 });
 
 export type UsuarioAdminFormValues = z.infer<typeof usuarioAdminSchema>;
 
 export const usuarioAdminUpdateSchema = usuarioAdminSchema.extend({
-  password: z
-    .string()
-    .trim()
-    .min(6, "La contraseña debe tener al menos 6 caracteres.")
-    .max(72, "La contraseña es demasiado larga.")
-    .optional()
-    .or(z.literal("")),
+  password: passwordOpcionalSchema,
 });
 
 export type UsuarioAdminUpdateFormValues = z.infer<typeof usuarioAdminUpdateSchema>;

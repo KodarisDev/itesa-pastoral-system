@@ -2,26 +2,31 @@ import { CreateEncargadoDialog } from "@/components/admin/CreateEncargadoDialog"
 import { UsersManagementTable } from "@/components/admin/UsersManagementTable";
 import { CreateAdminDialog } from "@/components/admin/CreateAdminDialog";
 import { AdminUsersManagementTable } from "@/components/admin/AdminUsersManagementTable";
+import { ConfiguracionHorarioForm } from "@/components/admin/ConfiguracionHorarioForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUsuarios } from "@/lib/db/usuarios";
 import { getClubes, getEncargados } from "@/lib/db/clubes";
 import { getEstudiantes } from "@/lib/db/estudiantes";
 import { getRoles, getPermisosDeUsuario } from "@/lib/db/roles";
+import { getConfiguracion } from "@/lib/db/configuracion";
 import { requireVista } from "@/lib/auth/guards";
+import { tienePermiso } from "@/lib/auth/permisos";
 import type { Permission } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsuariosPage() {
-  await requireVista("usuarios:gestionar");
+  const session = await requireVista("usuarios:gestionar");
 
-  const [usuarios, clubes, encargados, estudiantes, roles] = await Promise.all([
+  const [usuarios, clubes, encargados, estudiantes, roles, configuracion] = await Promise.all([
     getUsuarios(),
     getClubes(),
     getEncargados(),
     getEstudiantes(),
     getRoles(),
+    getConfiguracion(),
   ]);
+  const puedeEditarHorario = tienePermiso(session.user.permisos, "configuracion:editar");
   const idRolEncargado = roles.find((r) => r.nombre === "encargado_club")?.id_rol;
   const idRolAdmin = roles.find((r) => r.nombre === "admin")?.id_rol;
   const usuariosEncargados = usuarios.filter((u) => u.id_rol === idRolEncargado);
@@ -43,6 +48,7 @@ export default async function AdminUsuariosPage() {
         <TabsList>
           <TabsTrigger value="encargados">Encargados</TabsTrigger>
           <TabsTrigger value="administradores">Administradores</TabsTrigger>
+          {puedeEditarHorario && <TabsTrigger value="horario">Horario</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="encargados" className="space-y-4">
@@ -69,6 +75,12 @@ export default async function AdminUsuariosPage() {
             <AdminUsersManagementTable administradores={administradores} permisosPorUsuario={permisosPorUsuario} />
           )}
         </TabsContent>
+
+        {puedeEditarHorario && (
+          <TabsContent value="horario" className="space-y-4">
+            <ConfiguracionHorarioForm configuracion={configuracion} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

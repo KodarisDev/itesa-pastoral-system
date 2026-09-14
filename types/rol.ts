@@ -33,8 +33,8 @@ export type Permission = (typeof PERMISOS_CATALOGO)[number];
  * Subconjunto de PERMISOS_CATALOGO que hoy controla algo real en el código
  * (una página o una Server Action) — es lo único que se ofrece para asignar
  * a un administrador en Configuración, agrupado para el checklist de la UI.
- * El resto del catálogo (`clubes:encargados`, `roles:gestionar`,
- * `configuracion:editar`) está reservado para funcionalidad futura.
+ * El resto del catálogo (`clubes:encargados`, `roles:gestionar`) está
+ * reservado para funcionalidad futura.
  */
 export const PERMISOS_ASIGNABLES: { permiso: Permission; label: string; grupo: string }[] = [
   { permiso: "estudiantes:ver", label: "Ver el listado de estudiantes", grupo: "Estudiantes" },
@@ -46,4 +46,5 @@ export const PERMISOS_ASIGNABLES: { permiso: Permission; label: string; grupo: s
   { permiso: "asistencia:ver", label: "Ver los reportes de asistencia", grupo: "Asistencia" },
   { permiso: "asistencia:exportar", label: "Exportar asistencia a Excel", grupo: "Asistencia" },
   { permiso: "usuarios:gestionar", label: "Gestionar encargados y administradores del sistema", grupo: "Sistema" },
+  { permiso: "configuracion:editar", label: "Editar el día y hora general de pastoral", grupo: "Sistema" },
 ];

@@ -8,9 +8,12 @@ import type { Permission } from "@/types";
  * config añadiendo el provider real para usarse en Server Actions y en el
  * route handler (ambos corren en Node, no en Edge).
  */
+const DOCE_HORAS_EN_SEGUNDOS = 60 * 60 * 12;
+
 export const authConfig: NextAuthConfig = {
   trustHost: true,
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: DOCE_HORAS_EN_SEGUNDOS },
+  jwt: { maxAge: DOCE_HORAS_EN_SEGUNDOS },
   pages: { signIn: "/login" },
   providers: [],
   callbacks: {

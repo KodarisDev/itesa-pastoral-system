@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { LayoutDashboard, Shapes, UserPlus, GraduationCap, Settings, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, Shapes, UserPlus, GraduationCap, Settings, ClipboardCheck, ArrowUpCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { DashboardShell, type DashboardNavItem } from "@/components/shared/DashboardShell";
@@ -27,6 +27,12 @@ const NAV_ITEMS: (DashboardNavItem & { permiso?: Permission })[] = [
     label: "Estudiantes",
     icon: <GraduationCap className={ICON_CLASS} aria-hidden="true" />,
     permiso: "estudiantes:ver",
+  },
+  {
+    href: "/admin/promocion",
+    label: "Promoción",
+    icon: <ArrowUpCircle className={ICON_CLASS} aria-hidden="true" />,
+    permiso: "estudiantes:promover",
   },
   {
     href: "/admin/usuarios",
