@@ -16,9 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-
-type ModoFecha = "todas" | "especifica" | "rango";
 
 interface ExportAsistenciaModalProps {
   scope: "admin" | "encargado";
@@ -29,19 +26,12 @@ export function ExportAsistenciaModal({ scope, clubes = [] }: ExportAsistenciaMo
   const [open, setOpen] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [clubId, setClubId] = useState("todos");
-  const [modoFecha, setModoFecha] = useState<ModoFecha>("todas");
   const [fecha, setFecha] = useState("");
-  const [desde, setDesde] = useState("");
-  const [hasta, setHasta] = useState("");
 
   async function handleExportar() {
     const params = new URLSearchParams();
     if (scope === "admin" && clubId !== "todos") params.set("clubId", clubId);
-    if (modoFecha === "especifica" && fecha) params.set("fecha", fecha);
-    if (modoFecha === "rango") {
-      if (desde) params.set("desde", desde);
-      if (hasta) params.set("hasta", hasta);
-    }
+    if (fecha) params.set("fecha", fecha);
 
     setDescargando(true);
     try {
@@ -108,50 +98,8 @@ export function ExportAsistenciaModal({ scope, clubes = [] }: ExportAsistenciaMo
           )}
 
           <div>
-            <Label>Fechas</Label>
-            <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-xl bg-gray-100 p-1 dark:bg-neutral-800">
-              {(
-                [
-                  { value: "todas", label: "Todas" },
-                  { value: "especifica", label: "Fecha exacta" },
-                  { value: "rango", label: "Rango" },
-                ] as const
-              ).map((opcion) => (
-                <button
-                  key={opcion.value}
-                  type="button"
-                  onClick={() => setModoFecha(opcion.value)}
-                  className={cn(
-                    "rounded-lg py-1.5 text-xs font-medium transition-colors",
-                    modoFecha === opcion.value
-                      ? "bg-white text-red-700 shadow-sm dark:bg-neutral-950 dark:text-red-400"
-                      : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white",
-                  )}
-                >
-                  {opcion.label}
-                </button>
-              ))}
-            </div>
-
-            {modoFecha === "especifica" && (
-              <Input type="date" className="mt-2" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-            )}
-            {modoFecha === "rango" && (
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="export-desde" className="text-xs font-normal text-gray-500">
-                    Desde
-                  </Label>
-                  <Input id="export-desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="export-hasta" className="text-xs font-normal text-gray-500">
-                    Hasta
-                  </Label>
-                  <Input id="export-hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-                </div>
-              </div>
-            )}
+            <Label htmlFor="export-fecha">Día de asistencia</Label>
+            <Input id="export-fecha" type="date" className="mt-1.5" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
           </div>
         </div>
 

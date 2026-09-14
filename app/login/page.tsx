@@ -7,16 +7,16 @@ import { LoginForm } from "@/components/marca/LoginForm";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { auth } from "@/lib/auth";
 
-export const metadata: Metadata = {
-  title: "Acceso de encargados",
-  robots: { index: false, follow: false },
-};
-
 export default async function LoginPage() {
   const session = await auth();
-  if (session) {
-    if (session.user.rolNombre === "pastoral" || session.user.rolNombre === "admin") redirect("/admin");
-    if (session.user.rolNombre === "encargado_club") redirect("/club");
+  const rolNombre = session?.user?.rolNombre;
+
+  if (rolNombre === "pastoral" || rolNombre === "admin") {
+    redirect("/admin");
+  }
+
+  if (rolNombre === "encargado_club") {
+    redirect("/club");
   }
 
   return (
@@ -26,10 +26,19 @@ export default async function LoginPage() {
       </div>
       <div className="w-full max-w-sm rounded-3xl border border-neutral-100 bg-white p-8 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         <div className="mb-8 flex flex-col items-center text-center">
-          <Image src="/logo.webp" alt="Logo del instituto" width={48} height={48} className="mb-4 rounded-full" />
-          <h1 className="text-xl font-semibold text-neutral-950 dark:text-white">Acceso de encargados</h1>
+          <Image
+            src="/logo.webp"
+            alt="Logo del instituto"
+            width={48}
+            height={48}
+            className="mb-4 rounded-full"
+          />
+          <h1 className="text-xl font-semibold text-neutral-950 dark:text-white">
+            Acceso de encargados
+          </h1>
           <p className="mt-1.5 text-sm text-neutral-500 dark:text-gray-400">
-            Inicia sesión con el usuario que te proporcionó el encargado de pastoral.
+            Inicia sesión con el usuario que te proporcionó el encargado de
+            pastoral.
           </p>
         </div>
         <Suspense>
