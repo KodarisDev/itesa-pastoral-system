@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { tienePermiso } from "@/lib/auth/permisos";
-import { getClubById } from "@/lib/db/clubes";
+import { getClubById, getClubes } from "@/lib/db/clubes";
 import { getSesionesEnriquecidas, type FiltroAsistencia } from "@/lib/reportes/asistencia";
 import { generarExcelAsistencia } from "@/lib/reportes/asistencia-excel";
 
@@ -28,6 +28,12 @@ export async function GET(req: NextRequest) {
   const filtro: FiltroAsistencia = {};
   const descripcion: string[] = [];
   let clubNombreParaArchivo = "todos-los-clubes";
+  let clubesParaExportar: string[] = [];
+  const fecha = params.get("fecha");
+
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return NextResponse.json({ error: "Debes seleccionar un día específico para exportar." }, { status: 400 });
+  }
 
   if (session.user.rolNombre === "encargado_club") {
     const idClub = session.user.clubPrincipalId ?? session.user.clubIds[0];
@@ -36,38 +42,35 @@ export async function GET(req: NextRequest) {
     }
     filtro.clubId = idClub;
     const club = await getClubById(idClub);
-    descripcion.push(`Club: ${club?.nombre ?? "—"}`);
-    clubNombreParaArchivo = slug(club?.nombre ?? "club");
+    const clubNombre = club?.nombre ?? "club";
+    clubesParaExportar = [clubNombre];
+    descripcion.push(`Club: ${clubNombre}`);
+    clubNombreParaArchivo = slug(clubNombre);
   } else {
     // Roles "del sistema" (pastoral, admin): no están ligados a un club, pueden filtrar por cualquiera o ver todos.
     const clubId = params.get("clubId");
     if (clubId && clubId !== "todos") {
       filtro.clubId = Number(clubId);
       const club = await getClubById(Number(clubId));
-      descripcion.push(`Club: ${club?.nombre ?? "—"}`);
-      clubNombreParaArchivo = slug(club?.nombre ?? "club");
+      const clubNombre = club?.nombre ?? "club";
+      clubesParaExportar = [clubNombre];
+      descripcion.push(`Club: ${clubNombre}`);
+      clubNombreParaArchivo = slug(clubNombre);
     } else {
+      clubesParaExportar = (await getClubes()).map((club) => club.nombre);
       descripcion.push("Todos los clubes");
     }
   }
 
-  const fecha = params.get("fecha");
-  const desde = params.get("desde");
-  const hasta = params.get("hasta");
-  if (fecha) {
-    filtro.fechaDesde = fecha;
-    filtro.fechaHasta = fecha;
-    descripcion.push(`Fecha: ${fecha}`);
-  } else if (desde || hasta) {
-    if (desde) filtro.fechaDesde = desde;
-    if (hasta) filtro.fechaHasta = hasta;
-    descripcion.push(`Del ${desde ?? "inicio"} al ${hasta ?? "hoy"}`);
-  } else {
-    descripcion.push("Todas las fechas");
-  }
+  filtro.fechaDesde = fecha;
+  filtro.fechaHasta = fecha;
+  descripcion.push(`Fecha: ${fecha}`);
 
   const sesiones = await getSesionesEnriquecidas(filtro);
-  const buffer = await generarExcelAsistencia(sesiones, { subtitulo: descripcion.join(" · ") });
+  const buffer = await generarExcelAsistencia(sesiones, {
+    subtitulo: descripcion.join(" · "),
+    clubes: clubesParaExportar,
+  });
 
   const fechaArchivo = new Date().toISOString().slice(0, 10);
   const filename = `asistencia_${clubNombreParaArchivo}_${fechaArchivo}.xlsx`;

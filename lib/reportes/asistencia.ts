@@ -12,6 +12,8 @@ export interface FiltroAsistencia {
 
 export interface RegistroEnriquecido {
   estudianteId: number;
+  nombre: string;
+  apellido: string;
   nombreCompleto: string;
   curso: string;
   matricula: string;
@@ -53,6 +55,8 @@ function agruparEnSesiones(
       const est = estudiantesMap.get(f.id_estudiante);
       return {
         estudianteId: f.id_estudiante,
+        nombre: est?.nombre ?? `#${f.id_estudiante}`,
+        apellido: est?.apellido ?? "",
         nombreCompleto: est ? `${est.nombre} ${est.apellido}` : `#${f.id_estudiante}`,
         curso: est?.curso ?? "—",
         matricula: est?.matricula ?? "—",
