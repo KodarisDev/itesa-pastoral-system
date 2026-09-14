@@ -67,13 +67,6 @@ export async function GET(req: NextRequest) {
   }
 
   const sesiones = await getSesionesEnriquecidas(filtro);
-  if (sesiones.length === 0) {
-    return NextResponse.json(
-      { error: "No hay registros de asistencia para los filtros seleccionados." },
-      { status: 404 },
-    );
-  }
-
   const buffer = await generarExcelAsistencia(sesiones, { subtitulo: descripcion.join(" · ") });
 
   const fechaArchivo = new Date().toISOString().slice(0, 10);
