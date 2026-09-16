@@ -4,6 +4,9 @@ import { parsearRosterCompleto } from "@/lib/excel";
 import { upsertEstudiantePorMatricula } from "@/lib/db/estudiantes";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso } from "@/lib/auth/guards";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+
+const MAX_EXCEL_BYTES = 10 * 1024 * 1024;
 
 /**
  * Carga inicial (dev) de TODOS los estudiantes: las 21 hojas 4A..6G del
@@ -17,12 +20,19 @@ import { requirePermiso } from "@/lib/auth/guards";
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+    if (!consumeRateLimit("excel-upload", ip, 3, 15 * 60 * 1000)) {
+      return NextResponse.json({ error: "Demasiadas cargas. Espera unos minutos antes de volver a intentarlo." }, { status: 429 });
+    }
     await requirePermiso("estudiantes:promover");
 
     const formData = await req.formData();
     const archivo = formData.get("archivo");
     if (!(archivo instanceof File) || archivo.size === 0) {
       return NextResponse.json({ error: "Sube un archivo Excel (.xlsx) en el campo 'archivo'." }, { status: 400 });
+    }
+    if (archivo.size > MAX_EXCEL_BYTES) {
+      return NextResponse.json({ error: "El archivo no puede superar los 10 MB." }, { status: 413 });
     }
     if (!archivo.name.toLowerCase().endsWith(".xlsx")) {
       return NextResponse.json({ error: "Solo se permiten archivos .xlsx." }, { status: 400 });

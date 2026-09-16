@@ -4,6 +4,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { getClubById, getClubes } from "@/lib/db/clubes";
 import { getSesionesEnriquecidas, type FiltroAsistencia } from "@/lib/reportes/asistencia";
 import { generarExcelAsistencia } from "@/lib/reportes/asistencia-excel";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 function slug(texto: string) {
   return texto
@@ -15,6 +16,10 @@ function slug(texto: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  if (!consumeRateLimit("export", ip, 30, 60 * 1000)) {
+    return NextResponse.json({ error: "Demasiadas exportaciones. Espera un minuto antes de volver a intentarlo." }, { status: 429 });
+  }
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });

@@ -145,6 +145,7 @@ export async function removeMiembroDeClub(clubId: number, estudianteId: number):
 
     const estudiante = await getEstudianteById(estudianteId);
     if (!estudiante) return actionError("El estudiante no existe.");
+    if (estudiante.id_club !== clubId) return actionError("El estudiante no pertenece a este club.");
 
     const usuarioEncargado = await getUsuarioByEstudianteId(estudianteId);
     if (usuarioEncargado) {

@@ -39,6 +39,12 @@ export async function createUsuarioEncargado(formData: FormData): Promise<Action
       return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
     }
 
+    const roles = await getRoles();
+    const rolEncargado = roles.find((rol) => rol.nombre === "encargado_club");
+    if (!rolEncargado || parsed.data.idRol !== rolEncargado.id_rol) {
+      return actionError("Solo se pueden crear cuentas con el rol de encargado de club.");
+    }
+
     const existente = await getUsuarioByUsername(parsed.data.username);
     if (existente) {
       return actionError("Ese nombre de usuario ya está en uso, elige otro.");
@@ -106,6 +112,12 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
+    }
+
+    const roles = await getRoles();
+    const rolEncargado = roles.find((rol) => rol.nombre === "encargado_club");
+    if (!rolEncargado || parsed.data.idRol !== rolEncargado.id_rol) {
+      return actionError("Solo se pueden editar cuentas con el rol de encargado de club.");
     }
 
     const existente = await getUsuarioByUsername(parsed.data.username);
