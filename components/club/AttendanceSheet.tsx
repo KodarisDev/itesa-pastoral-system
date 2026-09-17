@@ -2,8 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { Loader2, Save, Clock, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/shared/Switch";
@@ -12,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { submitAttendance } from "@/lib/actions/attendance.actions";
+import { formatearFechaHoraPastoral } from "@/lib/asistencia-ventana";
 import type { RegistroAsistencia } from "@/lib/db/asistencia";
 import type { VentanaAsistencia } from "@/lib/asistencia-ventana";
 import type { Estudiante } from "@/types";
@@ -73,12 +72,12 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
           {ventana.abierta ? <Clock className="h-4 w-4 shrink-0" aria-hidden="true" /> : <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />}
           {ventana.abierta ? (
             <span>
-              Puedes pasar lista hasta el {format(ventana.fin!, "EEEE d 'de' MMMM, h:mm a", { locale: es })}.
+              Puedes pasar lista hasta el {formatearFechaHoraPastoral(ventana.fin!)}.
             </span>
           ) : (
             <span>
               Fuera del horario de pastoral. Podrás pasar lista de nuevo desde el{" "}
-              {format(ventana.siguienteInicio!, "EEEE d 'de' MMMM, h:mm a", { locale: es })}.
+              {formatearFechaHoraPastoral(ventana.siguienteInicio!)}.
             </span>
           )}
         </div>
