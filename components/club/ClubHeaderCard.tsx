@@ -6,10 +6,12 @@ import type { Club, Configuracion } from "@/types";
 export function ClubHeaderCard({
   club,
   miembrosActuales,
+  estudiantesEncargados = 0,
   configuracion,
 }: {
   club: Club;
   miembrosActuales: number;
+  estudiantesEncargados?: number;
   configuracion?: Configuracion | null;
 }) {
   const horario = configuracion ? formatearHorarioPastoral(configuracion) : null;
@@ -29,6 +31,11 @@ export function ClubHeaderCard({
           <Badge variant="secondary">
             {miembrosActuales} / {club.capacidad ?? "∞"} miembros
           </Badge>
+          {estudiantesEncargados > 0 && (
+            <Badge variant="outline">
+              +{estudiantesEncargados} encargado{estudiantesEncargados === 1 ? "" : "s"} estudiante{estudiantesEncargados === 1 ? "" : "s"}
+            </Badge>
+          )}
           {horario && <Badge variant="outline">Hora de pastoral: {horario}</Badge>}
         </div>
       </div>

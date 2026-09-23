@@ -30,6 +30,7 @@ interface ClubsTableProps {
   principalIdPorClub: Map<number, number>;
   secundarioIdPorClub: Map<number, number>;
   miembrosPorClub: Map<number, number>;
+  encargadosEstudiantesPorClub?: Map<number, number>;
   onSelect: (club: Club) => void;
 }
 
@@ -99,6 +100,7 @@ export function ClubsTable({
   principalIdPorClub,
   secundarioIdPorClub,
   miembrosPorClub,
+  encargadosEstudiantesPorClub,
   onSelect,
 }: ClubsTableProps) {
   const router = useRouter();
@@ -131,6 +133,7 @@ export function ClubsTable({
         {clubes.map((club) => {
           const encargadoNombre = principalPorClub.get(club.id_club);
           const miembros = miembrosPorClub.get(club.id_club) ?? 0;
+          const encargadosEstudiantes = encargadosEstudiantesPorClub?.get(club.id_club) ?? 0;
           const lleno = club.capacidad != null && miembros >= club.capacidad;
           const sinEncargado = !encargadoNombre;
           return (
@@ -146,9 +149,16 @@ export function ClubsTable({
                 >
                   {club.nombre}
                 </button>
-                <Badge variant={lleno ? "destructive" : "secondary"}>
-                  {miembros} / {club.capacidad ?? "∞"}
-                </Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant={lleno ? "destructive" : "secondary"}>
+                    {miembros} / {club.capacidad ?? "∞"}
+                  </Badge>
+                  {encargadosEstudiantes > 0 && (
+                    <Badge variant="outline">
+                      +{encargadosEstudiantes} encargado{encargadosEstudiantes === 1 ? "" : "s"}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 {encargadoNombre ? <span>{encargadoNombre}</span> : <Badge variant="warning">Sin encargado</Badge>}
@@ -184,6 +194,7 @@ export function ClubsTable({
             {clubes.map((club) => {
               const encargadoNombre = principalPorClub.get(club.id_club);
               const miembros = miembrosPorClub.get(club.id_club) ?? 0;
+              const encargadosEstudiantes = encargadosEstudiantesPorClub?.get(club.id_club) ?? 0;
               const lleno = club.capacidad != null && miembros >= club.capacidad;
               const sinEncargado = !encargadoNombre;
               return (
@@ -208,9 +219,16 @@ export function ClubsTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={lleno ? "destructive" : "secondary"}>
-                      {miembros} / {club.capacidad ?? "∞"}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant={lleno ? "destructive" : "secondary"}>
+                        {miembros} / {club.capacidad ?? "∞"}
+                      </Badge>
+                      {encargadosEstudiantes > 0 && (
+                        <Badge variant="outline">
+                          +{encargadosEstudiantes} encargado{encargadosEstudiantes === 1 ? "" : "s"}
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <ClubRowAcciones

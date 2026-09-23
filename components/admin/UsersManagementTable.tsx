@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Trash2 } from "lucide-react";
@@ -8,6 +8,8 @@ import { EditEncargadoDialog } from "@/components/admin/EditEncargadoDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,9 +71,12 @@ function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estud
   );
 }
 
+type FiltroTipo = "todos" | "maestro" | "estudiante";
+
 export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, estudiantesMap }: UsersManagementTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
   const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
 
   function handleDelete(usuarioId: number) {
@@ -94,11 +99,39 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
     );
   }
 
+  const encargadosFiltrados = encargados.filter((u) => {
+    if (filtroTipo === "todos") return true;
+    const esEstudiante = u.id_estudiante != null;
+    return filtroTipo === "estudiante" ? esEstudiante : !esEstudiante;
+  });
+
   return (
     <>
+      <div className="flex items-center gap-2">
+        <Label htmlFor="filtro-tipo-encargado" className="text-xs">
+          Tipo
+        </Label>
+        <Select value={filtroTipo} onValueChange={(v) => setFiltroTipo(v as FiltroTipo)}>
+          <SelectTrigger id="filtro-tipo-encargado" className="h-9 w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="maestro">Maestros</SelectItem>
+            <SelectItem value="estudiante">Estudiantes</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {encargadosFiltrados.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-12 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
+          Ningún encargado coincide con este filtro.
+        </div>
+      )}
+
       {/* Mobile: tarjetas — una tabla de varias columnas no cabe cómodamente en pantallas chicas */}
       <div className="space-y-2 md:hidden">
-        {encargados.map((u) => {
+        {encargadosFiltrados.map((u) => {
           const encargo = encargosPorUsuario.get(u.id_usuario);
           const clubNombre = encargo ? clubesMap.get(encargo.id_club)?.nombre : undefined;
           const estudiante = u.id_estudiante ? estudiantesMap.get(u.id_estudiante) ?? null : null;
@@ -133,6 +166,7 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Usuario</TableHead>
               <TableHead>Club</TableHead>
               <TableHead>Rol en el club</TableHead>
@@ -140,13 +174,16 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
             </TableRow>
           </TableHeader>
           <TableBody>
-            {encargados.map((u) => {
+            {encargadosFiltrados.map((u) => {
               const encargo = encargosPorUsuario.get(u.id_usuario);
               const clubNombre = encargo ? clubesMap.get(encargo.id_club)?.nombre : undefined;
               const estudiante = u.id_estudiante ? estudiantesMap.get(u.id_estudiante) ?? null : null;
               return (
                 <TableRow key={u.id_usuario}>
                   <TableCell className="font-medium text-gray-900 dark:text-white">{u.nombre}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{estudiante ? "Estudiante" : "Profesor"}</Badge>
+                  </TableCell>
                   <TableCell className="text-sm text-gray-600 dark:text-gray-400">{u.usuario}</TableCell>
                   <TableCell className="text-sm text-gray-600 dark:text-gray-400">{clubNombre ?? "—"}</TableCell>
                   <TableCell>

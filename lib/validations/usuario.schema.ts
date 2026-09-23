@@ -36,7 +36,8 @@ export const usuarioEncargadoSchema = z.object({
     .trim()
     .max(20)
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .refine((v) => !v || /^\d{4}-\d{4}$/.test(v), { message: "La matrícula debe tener el formato XXXX-XXXX." }),
 });
 
 export type UsuarioEncargadoFormValues = z.infer<typeof usuarioEncargadoSchema>;

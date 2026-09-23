@@ -3,7 +3,7 @@ import { ClipboardCheck, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { ClubHeaderCard } from "@/components/club/ClubHeaderCard";
 import { StatCard } from "@/components/admin/StatCard";
-import { getClubById } from "@/lib/db/clubes";
+import { getClubById, getEstudiantesEncargadosDeClub } from "@/lib/db/clubes";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 import { getAsistenciaPorClubCached, getConfiguracionCached } from "@/lib/db/cached";
 
@@ -14,17 +14,19 @@ export default async function ClubHomePage() {
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
   if (!idClub) redirect("/login");
 
-  const [club, miembros, filas, configuracion] = await Promise.all([
+  const [club, miembros, filas, configuracion, estudiantesEncargadosIds] = await Promise.all([
     getClubById(idClub),
     getEstudiantesPorClub(idClub),
     getAsistenciaPorClubCached(idClub),
     getConfiguracionCached(),
+    getEstudiantesEncargadosDeClub(idClub),
   ]);
   if (!club) redirect("/login");
 
   const fechaUltima = filas[0]?.fecha;
   const filasUltimaSesion = fechaUltima ? filas.filter((f) => f.fecha === fechaUltima) : [];
   const presentesUltimaSesion = filasUltimaSesion.filter((f) => f.estado === "Presente" || f.estado === "Tarde").length;
+  const miembrosDeCapacidad = miembros.filter((m) => !estudiantesEncargadosIds.has(m.id_estudiante)).length;
 
   return (
     <div className="space-y-6">
@@ -33,7 +35,12 @@ export default async function ClubHomePage() {
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Bienvenido/a, {session?.user.name}.</p>
       </div>
 
-      <ClubHeaderCard club={club} miembrosActuales={miembros.length} configuracion={configuracion} />
+      <ClubHeaderCard
+        club={club}
+        miembrosActuales={miembrosDeCapacidad}
+        estudiantesEncargados={estudiantesEncargadosIds.size}
+        configuracion={configuracion}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Miembros actuales" value={miembros.length} icon={Users} accent="neutral" />

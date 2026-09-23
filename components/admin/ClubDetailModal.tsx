@@ -14,14 +14,17 @@ interface ClubDetailModalProps {
   club: Club | null;
   encargados: EncargadoConNombre[];
   miembros: Estudiante[];
+  estudiantesEncargadosIds?: Set<number>;
   onClose: () => void;
 }
 
-export function ClubDetailModal({ club, encargados, miembros, onClose }: ClubDetailModalProps) {
+export function ClubDetailModal({ club, encargados, miembros, estudiantesEncargadosIds, onClose }: ClubDetailModalProps) {
   if (!club) return null;
 
   const principal = encargados.find((e) => e.encargado_principal);
   const secundarios = encargados.filter((e) => !e.encargado_principal);
+  const estudiantesEncargados = estudiantesEncargadosIds?.size ?? 0;
+  const miembrosDeCapacidad = miembros.length - estudiantesEncargados;
 
   return (
     <Dialog open={!!club} onOpenChange={(v) => !v && onClose()}>
@@ -43,8 +46,13 @@ export function ClubDetailModal({ club, encargados, miembros, onClose }: ClubDet
               <p className="text-sm text-gray-500 dark:text-gray-400">{club.descripcion}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge variant="secondary">
-                  {miembros.length} / {club.capacidad ?? "∞"} miembros
+                  {miembrosDeCapacidad} / {club.capacidad ?? "∞"} miembros
                 </Badge>
+                {estudiantesEncargados > 0 && (
+                  <Badge variant="outline">
+                    +{estudiantesEncargados} encargado{estudiantesEncargados === 1 ? "" : "s"} estudiante{estudiantesEncargados === 1 ? "" : "s"}
+                  </Badge>
+                )}
                 {principal ? (
                   <Badge variant="brand">Encargado: {principal.usuarioNombre}</Badge>
                 ) : (
@@ -61,7 +69,7 @@ export function ClubDetailModal({ club, encargados, miembros, onClose }: ClubDet
 
           <div>
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Miembros actuales</h3>
-            <ClubMembersTable clubId={club.id_club} miembros={miembros} />
+            <ClubMembersTable clubId={club.id_club} miembros={miembros} estudiantesEncargadosIds={estudiantesEncargadosIds} />
           </div>
         </div>
       </DialogContent>

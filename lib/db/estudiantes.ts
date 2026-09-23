@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { Estudiante } from "@/types";
 import type { FilaRoster } from "@/lib/excel";
+import { getMapaEstudiantesEncargadosPorClub } from "@/lib/db/clubes";
 
 export async function getEstudiantes(): Promise<Estudiante[]> {
   const { data, error } = await getSupabaseAdmin()
@@ -50,17 +51,21 @@ export async function getEstudiantesPorClub(idClub: number): Promise<Estudiante[
   return data;
 }
 
-/** Cantidad de miembros activos por club, para tarjetas/listas públicas. */
+/**
+ * Cantidad de miembros activos por club, para tarjetas/listas públicas y
+ * validaciones de cupo. Excluye a los estudiantes que son encargados de su
+ * propio club — quedan inscritos pero no ocupan cupo.
+ */
 export async function getConteoMiembrosPorClub(): Promise<Map<number, number>> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("estudiantes")
-    .select("id_club")
-    .eq("activo", true)
-    .not("id_club", "is", null);
+  const [{ data, error }, exentosPorClub] = await Promise.all([
+    getSupabaseAdmin().from("estudiantes").select("id_estudiante, id_club").eq("activo", true).not("id_club", "is", null),
+    getMapaEstudiantesEncargadosPorClub(),
+  ]);
   if (error) throw new Error(error.message);
   const conteo = new Map<number, number>();
   for (const row of data) {
     if (row.id_club == null) continue;
+    if (exentosPorClub.get(row.id_club)?.has(row.id_estudiante)) continue;
     conteo.set(row.id_club, (conteo.get(row.id_club) ?? 0) + 1);
   }
   return conteo;

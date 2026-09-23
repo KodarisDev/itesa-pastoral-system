@@ -17,6 +17,12 @@
 .DS_Store
 *.pem
 
+#graphify
+graphify-out
+
+#design
+DESIGN_SYSTEM.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*
