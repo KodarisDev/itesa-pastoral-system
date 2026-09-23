@@ -9,4 +9,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Hacer petición al proyecto
-        run: curl -f "Endpoint de supabase"
+        env:
+          SUPABASE_API_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_API_KEY" ]; then
+            echo "Falta el secreto SUPABASE_ANON_KEY en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --retry 3 \
+            --header "apikey: ${SUPABASE_API_KEY}" \
+            --header "Authorization: Bearer ${SUPABASE_API_KEY}" \
+            "https://gqcphtzqoiwepiyecunq.supabase.co/auth/v1/health"

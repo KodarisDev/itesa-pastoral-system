@@ -7,6 +7,8 @@ import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
+const MAX_EXCEL_BYTES = 10 * 1024 * 1024;
+
 function formatearErrores(errores: string[]): string {
   const primeros = errores.slice(0, 5).join(" | ");
   return errores.length > 5 ? `${primeros} | y ${errores.length - 5} error(es) más.` : primeros;
@@ -27,6 +29,7 @@ export async function validarRosterCuarto(formData: FormData): Promise<ActionRes
     if (!archivo.name.toLowerCase().endsWith(".xlsx")) {
       return actionError("Solo se permiten archivos .xlsx.");
     }
+    if (archivo.size > MAX_EXCEL_BYTES) return actionError("El archivo no puede superar los 10 MB.");
 
     const buffer = await archivo.arrayBuffer();
     const resultado = parsearRosterCuarto(buffer);
@@ -60,6 +63,10 @@ export async function ejecutarPromocion(
     if (!(archivo instanceof File) || archivo.size === 0) {
       return actionError("Selecciona un archivo Excel (.xlsx) para continuar.");
     }
+    if (!archivo.name.toLowerCase().endsWith(".xlsx")) {
+      return actionError("Solo se permiten archivos .xlsx.");
+    }
+    if (archivo.size > MAX_EXCEL_BYTES) return actionError("El archivo no puede superar los 10 MB.");
 
     const idsNoPasaron = formData
       .getAll("idsNoPasaron")

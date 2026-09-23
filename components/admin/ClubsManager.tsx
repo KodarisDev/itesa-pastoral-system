@@ -17,10 +17,21 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: Club
 
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
 
+  // Estudiante -> club(es) del que es encargado, para eximirlo del cupo de su propio club.
+  const idEstudiantePorUsuario = new Map(usuarios.map((u) => [u.id_usuario, u.id_estudiante]));
+  const estudiantesEncargadosPorClub = new Map<number, Set<number>>();
+  for (const e of encargados) {
+    const idEstudiante = idEstudiantePorUsuario.get(e.id_usuario);
+    if (idEstudiante == null) continue;
+    if (!estudiantesEncargadosPorClub.has(e.id_club)) estudiantesEncargadosPorClub.set(e.id_club, new Set());
+    estudiantesEncargadosPorClub.get(e.id_club)!.add(idEstudiante);
+  }
+
   const principalPorClub = new Map<number, string>();
   const principalIdPorClub = new Map<number, number>();
   const secundarioIdPorClub = new Map<number, number>();
   const miembrosPorClub = new Map<number, number>();
+  const encargadosEstudiantesPorClub = new Map<number, number>();
   for (const e of encargados) {
     if (e.encargado_principal) {
       const nombre = usuariosMap.get(e.id_usuario)?.nombre;
@@ -32,7 +43,12 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: Club
   }
   for (const est of estudiantes) {
     if (est.id_club == null) continue;
-    miembrosPorClub.set(est.id_club, (miembrosPorClub.get(est.id_club) ?? 0) + 1);
+    const esEncargadoDeSuClub = estudiantesEncargadosPorClub.get(est.id_club)?.has(est.id_estudiante) ?? false;
+    if (esEncargadoDeSuClub) {
+      encargadosEstudiantesPorClub.set(est.id_club, (encargadosEstudiantesPorClub.get(est.id_club) ?? 0) + 1);
+    } else {
+      miembrosPorClub.set(est.id_club, (miembrosPorClub.get(est.id_club) ?? 0) + 1);
+    }
   }
 
   const club = clubes.find((c) => c.id_club === selectedId) ?? null;
@@ -52,9 +68,16 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: Club
         principalIdPorClub={principalIdPorClub}
         secundarioIdPorClub={secundarioIdPorClub}
         miembrosPorClub={miembrosPorClub}
+        encargadosEstudiantesPorClub={encargadosEstudiantesPorClub}
         onSelect={(c) => setSelectedId(c.id_club)}
       />
-      <ClubDetailModal club={club} encargados={encargadosDelClub} miembros={miembros} onClose={() => setSelectedId(null)} />
+      <ClubDetailModal
+        club={club}
+        encargados={encargadosDelClub}
+        miembros={miembros}
+        estudiantesEncargadosIds={club ? estudiantesEncargadosPorClub.get(club.id_club) : undefined}
+        onClose={() => setSelectedId(null)}
+      />
     </>
   );
 }

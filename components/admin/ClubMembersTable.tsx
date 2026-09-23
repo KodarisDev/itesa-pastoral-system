@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { UserMinus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -24,9 +25,10 @@ import type { Estudiante } from "@/types";
 interface ClubMembersTableProps {
   clubId: number;
   miembros: Estudiante[];
+  estudiantesEncargadosIds?: Set<number>;
 }
 
-export function ClubMembersTable({ clubId, miembros }: ClubMembersTableProps) {
+export function ClubMembersTable({ clubId, miembros, estudiantesEncargadosIds }: ClubMembersTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -65,9 +67,12 @@ export function ClubMembersTable({ clubId, miembros }: ClubMembersTableProps) {
           {miembros.map((e) => (
             <TableRow key={e.id_estudiante}>
               <TableCell>
-                <Link href={`/admin/estudiantes?matricula=${e.matricula}`} className="font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400">
-                  {e.nombre} {e.apellido}
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href={`/admin/estudiantes?matricula=${e.matricula}`} className="font-medium text-gray-900 hover:text-red-700 dark:text-gray-100 dark:hover:text-red-400">
+                    {e.nombre} {e.apellido}
+                  </Link>
+                  {estudiantesEncargadosIds?.has(e.id_estudiante) && <Badge variant="brand">Encargado</Badge>}
+                </div>
               </TableCell>
               <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.curso ?? "—"}</TableCell>
               <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.matricula}</TableCell>

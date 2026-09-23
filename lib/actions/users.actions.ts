@@ -22,6 +22,26 @@ import { getRoles, guardarPermisosDeUsuario } from "@/lib/db/roles";
 import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
 
+const FORMATO_MATRICULA = /^\d{4}-\d{4}$/;
+
+/** Busca un estudiante por matrícula para autocompletar su nombre al crear/editar un encargado-estudiante. */
+export async function buscarEstudianteParaEncargado(
+  matricula: string,
+): Promise<ActionResult<{ nombre: string; apellido: string } | null>> {
+  try {
+    await requirePermiso("usuarios:gestionar");
+    const limpia = matricula.trim();
+    if (!FORMATO_MATRICULA.test(limpia)) {
+      return actionOk(null);
+    }
+    const estudiante = await getEstudianteByMatricula(limpia);
+    if (!estudiante) return actionOk(null);
+    return actionOk({ nombre: estudiante.nombre, apellido: estudiante.apellido });
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo buscar la matrícula.");
+  }
+}
+
 export async function createUsuarioEncargado(formData: FormData): Promise<ActionResult<{ username: string }>> {
   try {
     await requirePermiso("usuarios:gestionar");
@@ -37,6 +57,12 @@ export async function createUsuarioEncargado(formData: FormData): Promise<Action
     });
     if (!parsed.success) {
       return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
+    }
+
+    const roles = await getRoles();
+    const rolEncargado = roles.find((rol) => rol.nombre === "encargado_club");
+    if (!rolEncargado || parsed.data.idRol !== rolEncargado.id_rol) {
+      return actionError("Solo se pueden crear cuentas con el rol de encargado de club.");
     }
 
     const existente = await getUsuarioByUsername(parsed.data.username);
@@ -108,6 +134,12 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
       return actionError(parsed.error.issues[0]?.message ?? "Revisa los datos del formulario.");
     }
 
+    const roles = await getRoles();
+    const rolEncargado = roles.find((rol) => rol.nombre === "encargado_club");
+    if (!rolEncargado || parsed.data.idRol !== rolEncargado.id_rol) {
+      return actionError("Solo se pueden editar cuentas con el rol de encargado de club.");
+    }
+
     const existente = await getUsuarioByUsername(parsed.data.username);
     if (existente && existente.id_usuario !== usuarioId) {
       return actionError("Ese nombre de usuario ya está en uso, elige otro.");
@@ -127,17 +159,24 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
       idEstudiante = null;
     }
 
+    // Si se le quita el club por completo (queda "sin asignar"), deja de ser
+    // encargado de algo y se desactiva la cuenta; si se le asigna un club
+    // (nuevo o de vuelta), se reactiva.
+    const clubesActuales = await getClubesDeUsuario(usuarioId);
+    const teniaClub = clubesActuales.length > 0;
+    const activo = parsed.data.clubId ? true : teniaClub ? false : usuario.activo;
+
     await actualizarUsuario(usuarioId, {
       nombre: parsed.data.nombre,
       usuario: parsed.data.username,
       id_rol: parsed.data.idRol,
       id_estudiante: idEstudiante,
+      activo,
       password_hash: parsed.data.password ? hashPassword(parsed.data.password) : usuario.password_hash,
       ...(parsed.data.password ? { primer_inicio_sesion: true } : {}),
     });
 
     // Sin club nuevo: se quita de cualquier club que dirigiera (queda "sin asignar").
-    const clubesActuales = await getClubesDeUsuario(usuarioId);
     for (const encargo of clubesActuales) {
       if (encargo.id_club !== parsed.data.clubId) await quitarEncargado(encargo.id_club, usuarioId);
     }
