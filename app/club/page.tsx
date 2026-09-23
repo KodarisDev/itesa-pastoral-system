@@ -3,7 +3,7 @@ import { ClipboardCheck, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { ClubHeaderCard } from "@/components/club/ClubHeaderCard";
 import { StatCard } from "@/components/admin/StatCard";
-import { getClubById, getEstudiantesEncargadosDeClub } from "@/lib/db/clubes";
+import { getClubById, getEstudiantesEncargadosDeClub, getEncargadosDeClub } from "@/lib/db/clubes";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 import { getAsistenciaPorClubCached, getConfiguracionCached } from "@/lib/db/cached";
 
@@ -14,12 +14,13 @@ export default async function ClubHomePage() {
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
   if (!idClub) redirect("/login");
 
-  const [club, miembros, filas, configuracion, estudiantesEncargadosIds] = await Promise.all([
+  const [club, miembros, filas, configuracion, estudiantesEncargadosIds, encargadosDelClub] = await Promise.all([
     getClubById(idClub),
     getEstudiantesPorClub(idClub),
     getAsistenciaPorClubCached(idClub),
     getConfiguracionCached(),
     getEstudiantesEncargadosDeClub(idClub),
+    getEncargadosDeClub(idClub),
   ]);
   if (!club) redirect("/login");
 
@@ -27,6 +28,9 @@ export default async function ClubHomePage() {
   const filasUltimaSesion = fechaUltima ? filas.filter((f) => f.fecha === fechaUltima) : [];
   const presentesUltimaSesion = filasUltimaSesion.filter((f) => f.estado === "Presente" || f.estado === "Tarde").length;
   const miembrosDeCapacidad = miembros.filter((m) => !estudiantesEncargadosIds.has(m.id_estudiante)).length;
+  const esEncargadoPrincipal = encargadosDelClub.some(
+    (e) => e.id_usuario === Number(session?.user.id) && e.encargado_principal,
+  );
 
   return (
     <div className="space-y-6">
@@ -40,6 +44,7 @@ export default async function ClubHomePage() {
         miembrosActuales={miembrosDeCapacidad}
         estudiantesEncargados={estudiantesEncargadosIds.size}
         configuracion={configuracion}
+        puedeEditarFoto={esEncargadoPrincipal}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { clubSchema } from "@/lib/validations/club.schema";
 import {
@@ -19,6 +20,45 @@ import { getUsuarioByEstudianteId } from "@/lib/db/usuarios";
 import { subirFotoClub, borrarFotoClub } from "@/lib/supabase/storage";
 import { requirePermiso } from "@/lib/auth/guards";
 import { actionOk, actionError, type ActionResult } from "./types";
+
+/** Sube/cambia la foto del club que dirige el encargado en sesión — solo si es el encargado PRINCIPAL de ese club. */
+export async function actualizarFotoMiClub(formData: FormData): Promise<ActionResult<{ foto: string }>> {
+  try {
+    const session = await auth();
+    if (!session) return actionError("No tienes permiso para realizar esta acción.");
+
+    const idClub = Number(formData.get("clubId"));
+    if (!idClub) return actionError("Club inválido.");
+
+    const esRolDelSistema = session.user.rolNombre === "pastoral" || session.user.rolNombre === "admin";
+    if (!esRolDelSistema) {
+      const idUsuario = Number(session.user.id);
+      const encargados = await getEncargadosDeClub(idClub);
+      const esPrincipal = encargados.some((e) => e.id_usuario === idUsuario && e.encargado_principal);
+      if (!esPrincipal) return actionError("Solo el encargado principal de este club puede cambiar su foto.");
+    }
+
+    const club = await getClubById(idClub);
+    if (!club) return actionError("El club no existe.");
+
+    const nuevaFoto = formData.get("foto");
+    if (!(nuevaFoto instanceof File) || nuevaFoto.size === 0) {
+      return actionError("Selecciona una foto.");
+    }
+
+    const fotoAnterior = club.foto;
+    const fotoUrl = await subirFotoClub(idClub, nuevaFoto);
+    await actualizarClub(idClub, { foto: fotoUrl });
+    if (fotoAnterior) await borrarFotoClub(fotoAnterior).catch(() => {});
+
+    revalidatePath("/club");
+    revalidatePath("/admin/clubes");
+    revalidateTag(CACHE_TAGS.clubes);
+    return actionOk({ foto: fotoUrl });
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo actualizar la foto.");
+  }
+}
 
 export async function createClub(formData: FormData): Promise<ActionResult<{ id: number }>> {
   try {

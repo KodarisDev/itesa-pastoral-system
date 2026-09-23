@@ -1,12 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Pencil, Trash2, ArrowRight, Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ClubFormDialog } from "@/components/admin/ClubFormDialog";
 import {
   AlertDialog,
@@ -105,6 +107,7 @@ export function ClubsTable({
 }: ClubsTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [busqueda, setBusqueda] = useState("");
 
   function handleDelete(clubId: number) {
     startTransition(async () => {
@@ -126,11 +129,36 @@ export function ClubsTable({
     );
   }
 
+  const q = busqueda.trim().toLowerCase();
+  const clubesFiltrados = q ? clubes.filter((c) => c.nombre.toLowerCase().includes(q)) : clubes;
+
   return (
     <>
+      <div className="max-w-sm">
+        <Label htmlFor="busqueda-club" className="text-xs">
+          Buscar club
+        </Label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+          <Input
+            id="busqueda-club"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Nombre del club"
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {clubesFiltrados.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-12 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
+          Ningún club coincide con &quot;{busqueda}&quot;.
+        </div>
+      )}
+
       {/* Mobile: tarjetas — una tabla de varias columnas no cabe cómodamente en pantallas chicas */}
       <div className="space-y-2 md:hidden">
-        {clubes.map((club) => {
+        {clubesFiltrados.map((club) => {
           const encargadoNombre = principalPorClub.get(club.id_club);
           const miembros = miembrosPorClub.get(club.id_club) ?? 0;
           const encargadosEstudiantes = encargadosEstudiantesPorClub?.get(club.id_club) ?? 0;
@@ -191,7 +219,7 @@ export function ClubsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clubes.map((club) => {
+            {clubesFiltrados.map((club) => {
               const encargadoNombre = principalPorClub.get(club.id_club);
               const miembros = miembrosPorClub.get(club.id_club) ?? 0;
               const encargadosEstudiantes = encargadosEstudiantesPorClub?.get(club.id_club) ?? 0;

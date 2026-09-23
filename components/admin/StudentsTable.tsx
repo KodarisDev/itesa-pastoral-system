@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,29 +26,23 @@ function compararPorApellido(a: Estudiante, b: Estudiante) {
 export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTableProps) {
   const [busqueda, setBusqueda] = useState("");
   const [clubFiltro, setClubFiltro] = useState("todos");
+  const [cursoFiltro, setCursoFiltro] = useState("todos");
 
   const clubesMap = useMemo(() => new Map(clubes.map((c) => [c.id_club, c.nombre])), [clubes]);
   const clubesOrdenados = useMemo(() => [...clubes].sort((a, b) => a.nombre.localeCompare(b.nombre)), [clubes]);
 
-  // Los cursos se muestran como páginas, ordenados 4A..4G, 5A..5G, 6A..6G (el
-  // orden lexicográfico ya coincide con ese orden dado el formato "<grado><letra>").
+  // Ordenados 4A..4G, 5A..5G, 6A..6G (el orden lexicográfico ya coincide con
+  // ese orden dado el formato "<grado><letra>").
   const cursos = useMemo(
     () => Array.from(new Set(estudiantes.map((e) => e.curso).filter((c): c is string => !!c))).sort(),
     [estudiantes],
   );
 
-  const [cursoIndex, setCursoIndex] = useState(0);
-  useEffect(() => {
-    if (cursoIndex > cursos.length - 1) setCursoIndex(0);
-  }, [cursos.length, cursoIndex]);
-
-  const cursoActual = cursos[cursoIndex] ?? null;
-
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return estudiantes
       .filter((e) => {
-        if (e.curso !== cursoActual) return false;
+        if (cursoFiltro !== "todos" && e.curso !== cursoFiltro) return false;
         if (q && !`${e.nombre} ${e.apellido} ${e.matricula}`.toLowerCase().includes(q)) return false;
 
         if (clubFiltro !== "todos") {
@@ -65,11 +58,11 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
         return true;
       })
       .sort(compararPorApellido);
-  }, [estudiantes, cursoActual, busqueda, clubFiltro]);
+  }, [estudiantes, cursoFiltro, busqueda, clubFiltro]);
 
-  const hayFiltrosActivos = busqueda !== "" || clubFiltro !== "todos";
+  const hayFiltrosActivos = busqueda !== "" || clubFiltro !== "todos" || cursoFiltro !== "todos";
 
-  if (cursos.length === 0) {
+  if (estudiantes.length === 0) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-500">
         No hay estudiantes cargados todavía.
@@ -79,51 +72,10 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="Curso anterior"
-          disabled={cursoIndex === 0}
-          onClick={() => setCursoIndex((i) => Math.max(0, i - 1))}
-        >
-          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        <div className="flex flex-col items-center gap-1">
-          <Select value={cursoActual ?? ""} onValueChange={(v) => setCursoIndex(cursos.indexOf(v))}>
-            <SelectTrigger className="h-9 w-32 justify-center gap-1.5 text-center text-lg font-semibold [&>span]:mx-auto">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {cursos.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            {filtrados.length} de {estudiantes.filter((e) => e.curso === cursoActual).length} estudiante(s) · curso {cursoIndex + 1} de{" "}
-            {cursos.length}
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="Curso siguiente"
-          disabled={cursoIndex === cursos.length - 1}
-          onClick={() => setCursoIndex((i) => Math.min(cursos.length - 1, i + 1))}
-        >
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </Button>
-      </div>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="relative max-w-sm flex-1">
           <Label htmlFor="busqueda-estudiante" className="text-xs">
-            Buscar en {cursoActual}
+            Buscar estudiante
           </Label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
@@ -135,6 +87,25 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
               className="pl-9"
             />
           </div>
+        </div>
+
+        <div className="w-full sm:w-44">
+          <Label htmlFor="filtro-curso" className="text-xs">
+            Curso
+          </Label>
+          <Select value={cursoFiltro} onValueChange={setCursoFiltro}>
+            <SelectTrigger id="filtro-curso">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los cursos</SelectItem>
+              {cursos.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="w-full sm:w-52">
@@ -164,17 +135,22 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
             onClick={() => {
               setBusqueda("");
               setClubFiltro("todos");
+              setCursoFiltro("todos");
             }}
             className="text-sm font-medium text-brand hover:text-brand-dark sm:mb-2.5"
           >
             Quitar filtros
           </button>
         )}
+
+        <p className="w-full text-xs text-gray-400 dark:text-gray-500">
+          {filtrados.length} de {estudiantes.length} estudiante(s)
+        </p>
       </div>
 
       {filtrados.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-500">
-          No se encontraron estudiantes en {cursoActual} con estos filtros.
+          No se encontraron estudiantes con estos filtros.
         </div>
       ) : (
         <>
