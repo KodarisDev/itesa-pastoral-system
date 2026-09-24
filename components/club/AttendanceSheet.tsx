@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Loader2, Save, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, Save, Clock, AlertTriangle, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/shared/Switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,27 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
   const [justificaciones, setJustificaciones] = useState<Record<number, string>>(() =>
     Object.fromEntries(miembros.map((m) => [m.id_estudiante, mapaInicial.get(m.id_estudiante)?.nota ?? ""])),
   );
+
+  const [query, setQuery] = useState("");
+  const [curso, setCurso] = useState("todos");
+  const [estado, setEstado] = useState("todos");
+
+  const cursos = useMemo(
+    () => Array.from(new Set(miembros.map((m) => m.curso).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b)),
+    [miembros],
+  );
+
+  const visibles = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return miembros.filter((m) => {
+      if (q && !`${m.nombre} ${m.apellido} ${m.matricula}`.toLowerCase().includes(q)) return false;
+      if (curso !== "todos" && (m.curso ?? "") !== curso) return false;
+      const presente = presencia[m.id_estudiante] ?? false;
+      if (estado === "presentes" && !presente) return false;
+      if (estado === "ausentes" && presente) return false;
+      return true;
+    });
+  }, [miembros, query, curso, estado, presencia]);
 
   function handleFechaChange(nuevaFecha: string) {
     router.push(`/club/asistencia?fecha=${nuevaFecha}`);
@@ -83,13 +105,66 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
         </div>
       )}
 
-      <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
-        <div>
-          <Label htmlFor="fecha">Fecha</Label>
-          <Input id="fecha" type="date" defaultValue={fecha} onChange={(e) => handleFechaChange(e.target.value)} className="w-44" />
+      <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <Label htmlFor="fecha" className="text-xs">
+              Fecha
+            </Label>
+            <Input id="fecha" type="date" defaultValue={fecha} onChange={(e) => handleFechaChange(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="filtro-estudiante" className="text-xs">
+              Buscar estudiante
+            </Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+              <Input
+                id="filtro-estudiante"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Nombre o matrícula"
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="filtro-curso" className="text-xs">
+              Curso
+            </Label>
+            <Select value={curso} onValueChange={setCurso}>
+              <SelectTrigger id="filtro-curso">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {cursos.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="filtro-estado" className="text-xs">
+              Estado
+            </Label>
+            <Select value={estado} onValueChange={setEstado}>
+              <SelectTrigger id="filtro-estado">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="presentes">Presentes</SelectItem>
+                <SelectItem value="ausentes">Ausentes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           <span className="font-medium text-gray-800 dark:text-gray-200">{presentes}</span> de {miembros.length} presentes
+          {visibles.length !== miembros.length && ` · mostrando ${visibles.length}`}
         </p>
       </div>
 
@@ -97,9 +172,13 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
           Tu club todavía no tiene miembros asignados.
         </div>
+      ) : visibles.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
+          Ningún estudiante coincide con los filtros.
+        </div>
       ) : (
         <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
-          {miembros.map((m) => {
+          {visibles.map((m) => {
             const presente = presencia[m.id_estudiante] ?? false;
             return (
               <div key={m.id_estudiante} className="px-4 py-3">

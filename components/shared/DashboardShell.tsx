@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Menu, LogOut, X, KeyRound } from "lucide-react";
@@ -41,6 +41,19 @@ export function DashboardShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // El shell ya maneja su propio scroll (<main>); se bloquea el scroll del documento
+  // para que no se pueda arrastrar la pantalla más allá del contenido y quede en blanco.
+  useEffect(() => {
+    const { documentElement, body } = document;
+    const prev = { html: documentElement.style.overflow, body: body.style.overflow };
+    documentElement.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      documentElement.style.overflow = prev.html;
+      body.style.overflow = prev.body;
+    };
+  }, []);
+
   const isActive = (href: string) =>
     href === "/admin" || href === "/club"
       ? pathname === href
@@ -69,7 +82,7 @@ export function DashboardShell({
     });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 transition-colors duration-300 dark:bg-neutral-950">
+    <div className="fixed inset-0 flex overflow-hidden bg-gray-50 transition-colors duration-300 dark:bg-neutral-950">
       <ForcePasswordChangeModal />
       {/* Sidebar de escritorio */}
       <aside className="hidden w-52 min-w-52 flex-col border-r border-gray-100 bg-white py-5 px-3 transition-colors duration-300 dark:border-neutral-800 dark:bg-neutral-900 min-[850px]:flex">
@@ -215,7 +228,7 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
           <div className="mx-auto max-w-[1600px]">{children}</div>
         </main>
       </div>

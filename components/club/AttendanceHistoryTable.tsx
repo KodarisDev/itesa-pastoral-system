@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { SesionEnriquecida } from "@/lib/reportes/asistencia";
 
 interface AttendanceHistoryTableProps {
@@ -14,17 +15,20 @@ interface AttendanceHistoryTableProps {
 
 export function AttendanceHistoryTable({ sesiones }: AttendanceHistoryTableProps) {
   const [busqueda, setBusqueda] = useState("");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
 
   const filtradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    if (!q) return sesiones;
-    return sesiones
+    const enRango = sesiones.filter((s) => (!desde || s.fecha >= desde) && (!hasta || s.fecha <= hasta));
+    if (!q) return enRango;
+    return enRango
       .map((sesion) => ({
         ...sesion,
         registros: sesion.registros.filter((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q)),
       }))
       .filter((sesion) => sesion.registros.length > 0);
-  }, [sesiones, busqueda]);
+  }, [sesiones, busqueda, desde, hasta]);
 
   if (sesiones.length === 0) {
     return (
@@ -36,19 +40,39 @@ export function AttendanceHistoryTable({ sesiones }: AttendanceHistoryTableProps
 
   return (
     <div className="space-y-3">
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
-        <Input
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar estudiante por nombre o matrícula"
-          className="pl-9"
-        />
+      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3">
+        <div className="col-span-2 sm:col-span-1">
+          <Label htmlFor="filtro-estudiante" className="text-xs">
+            Buscar estudiante
+          </Label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+            <Input
+              id="filtro-estudiante"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Nombre o matrícula"
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="filtro-desde" className="text-xs">
+            Desde
+          </Label>
+          <Input id="filtro-desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="filtro-hasta" className="text-xs">
+            Hasta
+          </Label>
+          <Input id="filtro-hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+        </div>
       </div>
 
       {filtradas.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
-          No se encontró asistencia para ese estudiante.
+          No se encontró asistencia para estos filtros.
         </div>
       ) : (
         <div className="space-y-2">
