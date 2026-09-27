@@ -55,16 +55,7 @@ export default async function AdminDashboardPage() {
         <StatCard label="Clubes con cupo lleno" value={clubesLlenos} icon={Shapes} accent="neutral" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Ocupación por club</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OccupancyChart clubes={clubes} miembrosPorClub={miembrosPorClub} />
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Asistencia del miércoles {fechaMiercolesLabel} por club</CardTitle>
@@ -92,6 +83,15 @@ export default async function AdminDashboardPage() {
                   ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ocupación por club</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OccupancyChart clubes={clubes} miembrosPorClub={miembrosPorClub} />
           </CardContent>
         </Card>
       </div>

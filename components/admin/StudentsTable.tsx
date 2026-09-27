@@ -193,6 +193,7 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
                   <TableHead>Apellidos</TableHead>
                   <TableHead>Nombres</TableHead>
                   <TableHead>Matrícula</TableHead>
+                  <TableHead>Curso</TableHead>
                   <TableHead>Club actual</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -213,6 +214,13 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.nombre}</TableCell>
                       <TableCell className="text-sm text-gray-600 dark:text-gray-400">{e.matricula}</TableCell>
+                      <TableCell>
+                        {e.curso ? (
+                          <Badge variant="secondary">{e.curso}</Badge>
+                        ) : (
+                          <span className="text-sm text-gray-400 dark:text-gray-500">Sin curso</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {clubNombre ? (
                           <span className="text-sm text-gray-700 dark:text-gray-300">{clubNombre}</span>
