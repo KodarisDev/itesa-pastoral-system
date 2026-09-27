@@ -168,7 +168,7 @@ export function CreateEncargadoDialog({ clubes, idRolEncargado }: { clubes: Club
               <div className="mt-1.5 grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setTipo("maestro")}
+                  onClick={() => { setTipo("maestro"); setPrincipal(true); }}
                   className={cn(
                     "rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
                     tipo === "maestro"
@@ -180,7 +180,7 @@ export function CreateEncargadoDialog({ clubes, idRolEncargado }: { clubes: Club
                 </button>
                 <button
                   type="button"
-                  onClick={() => setTipo("estudiante")}
+                  onClick={() => { setTipo("estudiante"); setPrincipal(false); }}
                   className={cn(
                     "rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
                     tipo === "estudiante"

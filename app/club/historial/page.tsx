@@ -22,7 +22,7 @@ export default async function ClubHistorialPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Historial de asistencia</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{club.nombre}</p>
         </div>
-        <ExportAsistenciaModal scope="encargado" />
+        <ExportAsistenciaModal scope="encargado" fechas={Array.from(new Set(sesiones.map((s) => s.fecha)))} />
       </div>
       <AttendanceHistoryTable sesiones={sesiones} />
     </div>

@@ -12,7 +12,7 @@ interface OccupancyChartProps {
 export function OccupancyChart({ clubes, miembrosPorClub }: OccupancyChartProps) {
   const isDark = useIsDarkMode();
   const data = clubes.map((c) => ({
-    nombre: c.nombre.length > 14 ? `${c.nombre.slice(0, 14)}…` : c.nombre,
+    nombre: c.nombre,
     miembros: miembrosPorClub.get(c.id_club) ?? 0,
     cupo: c.capacidad ?? 0,
   }));
@@ -21,13 +21,24 @@ export function OccupancyChart({ clubes, miembrosPorClub }: OccupancyChartProps)
   const axisColor = isDark ? "#737373" : "#a3a3a3";
   const cupoColor = isDark ? "#404040" : "#e5e5e5";
 
+  // Barras horizontales: los nombres completos caben a la izquierda y la altura
+  // crece con la cantidad de clubes para que ninguno quede sin etiqueta.
+  const alto = Math.max(288, data.length * 48);
+
   return (
-    <div className="h-72 w-full">
+    <div className="w-full" style={{ height: alto }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-          <XAxis dataKey="nombre" tick={{ fontSize: 11, fill: axisColor }} stroke={axisColor} />
-          <YAxis tick={{ fontSize: 11, fill: axisColor }} stroke={axisColor} allowDecimals={false} />
+        <BarChart data={data} layout="vertical" margin={{ top: 8, right: 16, left: 0, bottom: 0 }} barGap={2} barCategoryGap="22%">
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridColor} />
+          <XAxis type="number" tick={{ fontSize: 11, fill: axisColor }} stroke={axisColor} allowDecimals={false} />
+          <YAxis
+            type="category"
+            dataKey="nombre"
+            width={190}
+            interval={0}
+            tick={{ fontSize: 12, fill: axisColor }}
+            stroke={axisColor}
+          />
           <Tooltip
             contentStyle={{
               borderRadius: 12,
@@ -38,8 +49,8 @@ export function OccupancyChart({ clubes, miembrosPorClub }: OccupancyChartProps)
             }}
             cursor={{ fill: isDark ? "#262626" : "#fafafa" }}
           />
-          <Bar dataKey="cupo" fill={cupoColor} radius={[6, 6, 0, 0]} name="Cupo máximo" />
-          <Bar dataKey="miembros" fill="#c0392b" radius={[6, 6, 0, 0]} name="Miembros actuales" />
+          <Bar dataKey="cupo" fill={cupoColor} radius={[0, 6, 6, 0]} name="Cupo máximo" />
+          <Bar dataKey="miembros" fill="#c0392b" radius={[0, 6, 6, 0]} name="Miembros actuales" />
         </BarChart>
       </ResponsiveContainer>
     </div>

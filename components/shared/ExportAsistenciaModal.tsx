@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
@@ -13,16 +15,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ExportAsistenciaModalProps {
   scope: "admin" | "encargado";
   clubes?: { id: number; nombre: string }[];
+  /** Días (YYYY-MM-DD) en los que se pasó lista, sin repetir. */
+  fechas: string[];
 }
 
-export function ExportAsistenciaModal({ scope, clubes = [] }: ExportAsistenciaModalProps) {
+export function ExportAsistenciaModal({ scope, clubes = [], fechas }: ExportAsistenciaModalProps) {
   const [open, setOpen] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [clubId, setClubId] = useState("todos");
@@ -99,7 +102,18 @@ export function ExportAsistenciaModal({ scope, clubes = [] }: ExportAsistenciaMo
 
           <div>
             <Label htmlFor="export-fecha">Día de asistencia</Label>
-            <Input id="export-fecha" type="date" className="mt-1.5" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+            <Select value={fecha} onValueChange={setFecha}>
+              <SelectTrigger id="export-fecha" className="mt-1.5">
+                <SelectValue placeholder="Selecciona un día" />
+              </SelectTrigger>
+              <SelectContent>
+                {fechas.map((f) => (
+                  <SelectItem key={f} value={f}>
+                    {format(new Date(`${f}T00:00:00`), "EEEE d 'de' MMMM yyyy", { locale: es })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -107,7 +121,7 @@ export function ExportAsistenciaModal({ scope, clubes = [] }: ExportAsistenciaMo
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={descargando}>
             Cancelar
           </Button>
-          <Button type="button" onClick={handleExportar} disabled={descargando}>
+          <Button type="button" onClick={handleExportar} disabled={descargando || !fecha}>
             {descargando ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (

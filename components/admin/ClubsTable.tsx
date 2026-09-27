@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Pencil, Trash2, ArrowRight, Search } from "lucide-react";
@@ -34,6 +34,7 @@ interface ClubsTableProps {
   miembrosPorClub: Map<number, number>;
   encargadosEstudiantesPorClub?: Map<number, number>;
   onSelect: (club: Club) => void;
+  actions?: ReactNode;
 }
 
 interface ClubRowAccionesProps {
@@ -104,6 +105,7 @@ export function ClubsTable({
   miembrosPorClub,
   encargadosEstudiantesPorClub,
   onSelect,
+  actions,
 }: ClubsTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -123,9 +125,12 @@ export function ClubsTable({
 
   if (clubes.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
-        Todavía no has creado ningún club.
-      </div>
+      <>
+        {actions && <div className="flex flex-wrap justify-end gap-2">{actions}</div>}
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
+          Todavía no has creado ningún club.
+        </div>
+      </>
     );
   }
 
@@ -134,20 +139,23 @@ export function ClubsTable({
 
   return (
     <>
-      <div className="max-w-sm">
-        <Label htmlFor="busqueda-club" className="text-xs">
-          Buscar club
-        </Label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
-          <Input
-            id="busqueda-club"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Nombre del club"
-            className="pl-9"
-          />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="w-full max-w-sm">
+          <Label htmlFor="busqueda-club" className="text-xs">
+            Buscar club
+          </Label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+            <Input
+              id="busqueda-club"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Nombre del club"
+              className="pl-9"
+            />
+          </div>
         </div>
+        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
 
       {clubesFiltrados.length === 0 && (

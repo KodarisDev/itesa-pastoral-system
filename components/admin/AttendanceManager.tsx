@@ -21,8 +21,7 @@ interface AttendanceManagerProps {
 export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) {
   const [clubId, setClubId] = useState("todos");
   const [estudianteQuery, setEstudianteQuery] = useState("");
-  const [desde, setDesde] = useState("");
-  const [hasta, setHasta] = useState("");
+  const [dia, setDia] = useState("todos");
   const [modal, setModal] = useState<"con-registro" | "sin-registro" | null>(null);
 
   const filtradas = useMemo(() => {
@@ -30,8 +29,7 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
     return sesiones
       .filter((s) => {
         if (clubId !== "todos" && String(s.clubId) !== clubId) return false;
-        if (desde && s.fecha < desde) return false;
-        if (hasta && s.fecha > hasta) return false;
+        if (dia !== "todos" && s.fecha !== dia) return false;
         if (q && !s.registros.some((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q))) return false;
         return true;
       })
@@ -40,7 +38,9 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
         const registros = s.registros.filter((r) => `${r.nombreCompleto} ${r.matricula}`.toLowerCase().includes(q));
         return { ...s, registros, presentes: registros.filter((r) => r.presente).length, total: registros.length };
       });
-  }, [sesiones, clubId, estudianteQuery, desde, hasta]);
+  }, [sesiones, clubId, estudianteQuery, dia]);
+
+  const fechas = useMemo(() => Array.from(new Set(sesiones.map((s) => s.fecha))).sort((a, b) => b.localeCompare(a)), [sesiones]);
 
   const totalPresentes = filtradas.reduce((acc, s) => acc + s.presentes, 0);
   const totalRegistros = filtradas.reduce((acc, s) => acc + s.total, 0);
@@ -78,7 +78,7 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
             Consulta la asistencia registrada por todos los clubes y exporta los datos que necesites.
           </p>
         </div>
-        <ExportAsistenciaModal scope="admin" clubes={clubes} />
+        <ExportAsistenciaModal scope="admin" clubes={clubes} fechas={fechas} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -100,7 +100,7 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
         <StatCard label="Asistencia promedio" value={`${porcentaje}%`} icon={Percent} accent={porcentaje >= 80 ? "success" : "warning"} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3">
         <div>
           <Label htmlFor="filtro-club" className="text-xs">
             Club
@@ -135,16 +135,22 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
           </div>
         </div>
         <div>
-          <Label htmlFor="filtro-desde" className="text-xs">
-            Desde
+          <Label htmlFor="filtro-dia" className="text-xs">
+            Día de asistencia
           </Label>
-          <Input id="filtro-desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="filtro-hasta" className="text-xs">
-            Hasta
-          </Label>
-          <Input id="filtro-hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+          <Select value={dia} onValueChange={setDia}>
+            <SelectTrigger id="filtro-dia">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los días</SelectItem>
+              {fechas.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {format(new Date(`${f}T00:00:00`), "EEEE d 'de' MMMM yyyy", { locale: es })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

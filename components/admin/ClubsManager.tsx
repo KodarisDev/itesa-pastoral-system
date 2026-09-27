@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ClubsTable } from "@/components/admin/ClubsTable";
 import { ClubDetailModal } from "@/components/admin/ClubDetailModal";
 import type { Club, Encargado, Estudiante, Usuario } from "@/types";
@@ -10,9 +10,10 @@ interface ClubsManagerProps {
   usuarios: Usuario[];
   encargados: Encargado[];
   estudiantes: Estudiante[];
+  actions?: ReactNode;
 }
 
-export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: ClubsManagerProps) {
+export function ClubsManager({ clubes, usuarios, encargados, estudiantes, actions }: ClubsManagerProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
@@ -70,6 +71,7 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes }: Club
         miembrosPorClub={miembrosPorClub}
         encargadosEstudiantesPorClub={encargadosEstudiantesPorClub}
         onSelect={(c) => setSelectedId(c.id_club)}
+        actions={actions}
       />
       <ClubDetailModal
         club={club}

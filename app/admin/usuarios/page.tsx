@@ -56,14 +56,12 @@ export default async function AdminUsuariosPage() {
         </TabsList>
 
         <TabsContent value="encargados" className="space-y-4">
-          <div className="flex justify-end">
-            {idRolEncargado != null && <CreateEncargadoDialog clubes={clubes} idRolEncargado={idRolEncargado} />}
-          </div>
           <UsersManagementTable
             encargados={usuariosEncargados}
             clubes={clubes}
             encargosPorUsuario={encargosPorUsuario}
             estudiantesMap={estudiantesMap}
+            actions={idRolEncargado != null ? <CreateEncargadoDialog clubes={clubes} idRolEncargado={idRolEncargado} /> : undefined}
           />
         </TabsContent>
 

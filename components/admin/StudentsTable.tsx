@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ interface StudentsTableProps {
   estudiantes: Estudiante[];
   clubes: Club[];
   onSelect: (estudiante: Estudiante) => void;
+  actions?: ReactNode;
 }
 
 const SIN_CLUB = "__sin_club__";
@@ -23,7 +24,7 @@ function compararPorApellido(a: Estudiante, b: Estudiante) {
   return a.apellido.localeCompare(b.apellido, "es") || a.nombre.localeCompare(b.nombre, "es");
 }
 
-export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTableProps) {
+export function StudentsTable({ estudiantes, clubes, onSelect, actions }: StudentsTableProps) {
   const [busqueda, setBusqueda] = useState("");
   const [clubFiltro, setClubFiltro] = useState("todos");
   const [cursoFiltro, setCursoFiltro] = useState("todos");
@@ -64,9 +65,12 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
 
   if (estudiantes.length === 0) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-500">
-        No hay estudiantes cargados todavía.
-      </div>
+      <>
+        {actions && <div className="flex justify-end">{actions}</div>}
+        <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-500">
+          No hay estudiantes cargados todavía.
+        </div>
+      </>
     );
   }
 
@@ -142,6 +146,8 @@ export function StudentsTable({ estudiantes, clubes, onSelect }: StudentsTablePr
             Quitar filtros
           </button>
         )}
+
+        {actions && <div className="sm:ml-auto">{actions}</div>}
 
         <p className="w-full text-xs text-gray-400 dark:text-gray-500">
           {filtrados.length} de {estudiantes.length} estudiante(s)

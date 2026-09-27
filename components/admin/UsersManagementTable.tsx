@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Trash2 } from "lucide-react";
@@ -29,6 +29,7 @@ interface UsersManagementTableProps {
   clubes: Club[];
   encargosPorUsuario: Map<number, Encargado>;
   estudiantesMap: Map<number, Estudiante>;
+  actions?: ReactNode;
 }
 
 interface UserRowAccionesProps {
@@ -73,7 +74,7 @@ function UserRowAcciones({ usuario, clubes, clubActualId, principalActual, estud
 
 type FiltroTipo = "todos" | "maestro" | "estudiante";
 
-export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, estudiantesMap }: UsersManagementTableProps) {
+export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, estudiantesMap, actions }: UsersManagementTableProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
@@ -93,9 +94,12 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
 
   if (encargados.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
-        Todavía no has creado ningún encargado de club.
-      </div>
+      <>
+        {actions && <div className="flex justify-end">{actions}</div>}
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
+          Todavía no has creado ningún encargado de club.
+        </div>
+      </>
     );
   }
 
@@ -107,20 +111,23 @@ export function UsersManagementTable({ encargados, clubes, encargosPorUsuario, e
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        <Label htmlFor="filtro-tipo-encargado" className="text-xs">
-          Tipo
-        </Label>
-        <Select value={filtroTipo} onValueChange={(v) => setFiltroTipo(v as FiltroTipo)}>
-          <SelectTrigger id="filtro-tipo-encargado" className="h-9 w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="maestro">Maestros</SelectItem>
-            <SelectItem value="estudiante">Estudiantes</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="filtro-tipo-encargado" className="text-xs">
+            Tipo
+          </Label>
+          <Select value={filtroTipo} onValueChange={(v) => setFiltroTipo(v as FiltroTipo)}>
+            <SelectTrigger id="filtro-tipo-encargado" className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="maestro">Maestros</SelectItem>
+              <SelectItem value="estudiante">Estudiantes</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {actions}
       </div>
 
       {encargadosFiltrados.length === 0 && (

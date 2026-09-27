@@ -23,27 +23,32 @@ export default async function AdminClubesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Clubes</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Crea y administra los clubes del instituto.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <ExportEstudiantesClubModal clubes={clubes} />
-          <ClubFormDialog
-            mode="crear"
-            encargados={usuariosEncargados}
-            trigger={
-              <Button>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Nuevo club
-              </Button>
-            }
-          />
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Clubes</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Crea y administra los clubes del instituto.</p>
       </div>
 
-      <ClubsManager clubes={clubes} usuarios={usuariosEncargados} encargados={encargados} estudiantes={estudiantes} />
+      <ClubsManager
+        clubes={clubes}
+        usuarios={usuariosEncargados}
+        encargados={encargados}
+        estudiantes={estudiantes}
+        actions={
+          <>
+            <ExportEstudiantesClubModal clubes={clubes} />
+            <ClubFormDialog
+              mode="crear"
+              encargados={usuariosEncargados}
+              trigger={
+                <Button>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Nuevo club
+                </Button>
+              }
+            />
+          </>
+        }
+      />
     </div>
   );
 }
