@@ -38,7 +38,7 @@ export function ClubCard({ club, miembrosActuales }: ClubCardProps) {
               (cupoRestante > 0 ? "bg-white/90 text-neutral-700" : "bg-white/90 text-red-600")
             }
           >
-            {cupoRestante > 0 ? `${cupoRestante} cupos` : "Sin cupo"}
+            {cupoRestante > 0 ? `${cupoRestante} cupo${cupoRestante === 1 ? "" : "s"}` : "Sin cupo"}
           </span>
         )}
       </div>

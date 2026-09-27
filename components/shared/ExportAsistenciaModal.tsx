@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
@@ -17,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateSessionSelect } from "@/components/shared/DateSessionSelect";
 
 interface ExportAsistenciaModalProps {
   scope: "admin" | "encargado";
@@ -102,18 +101,9 @@ export function ExportAsistenciaModal({ scope, clubes = [], fechas }: ExportAsis
 
           <div>
             <Label htmlFor="export-fecha">Día de asistencia</Label>
-            <Select value={fecha} onValueChange={setFecha}>
-              <SelectTrigger id="export-fecha" className="mt-1.5">
-                <SelectValue placeholder="Selecciona un día" />
-              </SelectTrigger>
-              <SelectContent>
-                {fechas.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {format(new Date(`${f}T00:00:00`), "EEEE d 'de' MMMM yyyy", { locale: es })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="mt-1.5">
+              <DateSessionSelect id="export-fecha" fechas={fechas} value={fecha} onChange={setFecha} />
+            </div>
           </div>
         </div>
 

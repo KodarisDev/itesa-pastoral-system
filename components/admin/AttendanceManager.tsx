@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExportAsistenciaModal } from "@/components/shared/ExportAsistenciaModal";
+import { DateSessionSelect } from "@/components/shared/DateSessionSelect";
 import type { SesionEnriquecida } from "@/lib/reportes/asistencia";
 
 interface AttendanceManagerProps {
@@ -138,19 +139,7 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
           <Label htmlFor="filtro-dia" className="text-xs">
             Día de asistencia
           </Label>
-          <Select value={dia} onValueChange={setDia}>
-            <SelectTrigger id="filtro-dia">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los días</SelectItem>
-              {fechas.map((f) => (
-                <SelectItem key={f} value={f}>
-                  {format(new Date(`${f}T00:00:00`), "EEEE d 'de' MMMM yyyy", { locale: es })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DateSessionSelect id="filtro-dia" fechas={fechas} value={dia} onChange={setDia} allValue="todos" allLabel="Todos los días" />
         </div>
       </div>
 

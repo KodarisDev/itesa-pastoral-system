@@ -36,7 +36,14 @@ export function Navbar() {
       <header className="sticky top-0 z-50 w-full border-b border-neutral-100 bg-white/95 backdrop-blur-sm transition-colors duration-300">
         <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex shrink-0 items-center">
-            <Image src="/logo.webp" alt="Pastoral Salesiana del ITESA" width={64} height={64} className="rounded-full" priority />
+            <Image
+              src="/branding/logot.jfif"
+              alt="Pastoral Salesiana del ITESA"
+              width={180}
+              height={94}
+              className="h-11 w-auto"
+              priority
+            />
           </Link>
 
           <nav className="hidden items-center gap-0.5 lg:flex xl:gap-1">
