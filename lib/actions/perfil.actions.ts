@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { cambiarPasswordPropiaSchema } from "@/lib/validations/usuario.schema";
 import { actualizarUsuario, hashPassword } from "@/lib/db/usuarios";
 import { CACHE_TAGS } from "@/lib/db/cached";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 export async function cambiarPasswordPropia(formData: FormData): Promise<ActionResult> {
@@ -23,6 +24,14 @@ export async function cambiarPasswordPropia(formData: FormData): Promise<ActionR
     await actualizarUsuario(Number(session.user.id), {
       password_hash: hashPassword(parsed.data.password),
       primer_inicio_sesion: false,
+    });
+
+    await registrarBitacora({
+      session,
+      accion: "usuario.cambiar_password_propia",
+      entidad: "usuario",
+      entidadId: session.user.id,
+      descripcion: `${session.user.name ?? "Un usuario"} cambió su propia contraseña.`,
     });
 
     revalidateTag(CACHE_TAGS.usuarios);

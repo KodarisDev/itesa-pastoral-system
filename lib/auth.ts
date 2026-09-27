@@ -5,6 +5,7 @@ import { getRolById } from "@/lib/db/roles";
 import { resolverSesion } from "@/lib/auth/permisos";
 import { authConfig } from "@/lib/auth.config";
 import { checkLoginRateLimit, clearLoginFailures, recordLoginFailure } from "@/lib/security/rate-limit";
+import { registrarBitacora } from "@/lib/audit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -32,18 +33,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const usuario = await getUsuarioByUsername(usernameNormalizado);
         if (!usuario || !usuario.activo) {
           recordLoginFailure(ip, usernameNormalizado);
+          await registrarBitacora({
+            session: null,
+            accion: "sesion.login_fallido",
+            entidad: "sesion",
+            descripcion: `Intento de login fallido para "${usernameNormalizado}" (usuario inexistente o inactivo).`,
+            ip,
+          });
           return null;
         }
 
         const valido = compararPassword(password, usuario.password_hash);
         if (!valido) {
           recordLoginFailure(ip, usernameNormalizado);
+          await registrarBitacora({
+            session: { user: { id: usuario.id_usuario, name: usuario.nombre } },
+            accion: "sesion.login_fallido",
+            entidad: "sesion",
+            descripcion: `Intento de login fallido para "${usernameNormalizado}" (contraseña incorrecta).`,
+            ip,
+          });
           return null;
         }
 
         clearLoginFailures(ip, usernameNormalizado);
 
         const [rol, sesion] = await Promise.all([getRolById(usuario.id_rol), resolverSesion(usuario)]);
+
+        await registrarBitacora({
+          session: { user: { id: usuario.id_usuario, name: usuario.nombre } },
+          accion: "sesion.login",
+          entidad: "sesion",
+          descripcion: `${usuario.nombre} inició sesión.`,
+          ip,
+        });
 
         return {
           id: String(usuario.id_usuario),
@@ -59,4 +82,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    async signOut(message) {
+      // Con estrategia "jwt", el evento llega con el token (no con la sesión) —
+      // ya no tiene los campos de sesión, pero conserva `sub` (id) y `name`.
+      const token = "token" in message ? message.token : null;
+      if (!token?.sub) return;
+      await registrarBitacora({
+        session: { user: { id: token.sub, name: token.name ?? null } },
+        accion: "sesion.logout",
+        entidad: "sesion",
+        descripcion: `${token.name ?? "Un usuario"} cerró sesión.`,
+      });
+    },
+  },
 });

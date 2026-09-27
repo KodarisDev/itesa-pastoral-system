@@ -20,6 +20,7 @@ import { getClubById, agregarEncargado, quitarEncargado, getClubesDeUsuario } fr
 import { getEstudianteByMatricula, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { getRoles, guardarPermisosDeUsuario } from "@/lib/db/roles";
 import { requirePermiso } from "@/lib/auth/guards";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 const FORMATO_MATRICULA = /^\d{4}-\d{4}$/;
@@ -44,7 +45,7 @@ export async function buscarEstudianteParaEncargado(
 
 export async function createUsuarioEncargado(formData: FormData): Promise<ActionResult<{ username: string }>> {
   try {
-    await requirePermiso("usuarios:gestionar");
+    const session = await requirePermiso("usuarios:gestionar");
 
     const parsed = usuarioEncargadoSchema.safeParse({
       nombre: formData.get("nombre"),
@@ -102,6 +103,15 @@ export async function createUsuarioEncargado(formData: FormData): Promise<Action
       await actualizarEstudiante(idEstudiante, { id_club: parsed.data.clubId });
     }
 
+    await registrarBitacora({
+      session,
+      accion: "usuario.crear_encargado",
+      entidad: "usuario",
+      entidadId: usuario.id_usuario,
+      descripcion: `Creó al encargado "${parsed.data.nombre}" (${parsed.data.username}).`,
+      metadata: { clubId: parsed.data.clubId, principal: parsed.data.principal },
+    });
+
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
@@ -116,7 +126,7 @@ export async function createUsuarioEncargado(formData: FormData): Promise<Action
 
 export async function updateUsuarioEncargado(usuarioId: number, formData: FormData): Promise<ActionResult> {
   try {
-    await requirePermiso("usuarios:gestionar");
+    const session = await requirePermiso("usuarios:gestionar");
 
     const usuario = await getUsuarioById(usuarioId);
     if (!usuario) return actionError("El usuario no existe.");
@@ -191,6 +201,15 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
       await actualizarEstudiante(idEstudiante, { id_club: parsed.data.clubId ?? null });
     }
 
+    await registrarBitacora({
+      session,
+      accion: "usuario.actualizar_encargado",
+      entidad: "usuario",
+      entidadId: usuarioId,
+      descripcion: `Actualizó al encargado "${parsed.data.nombre}" (${parsed.data.username}).`,
+      metadata: { clubId: parsed.data.clubId, principal: parsed.data.principal, contraseñaCambiada: !!parsed.data.password },
+    });
+
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
@@ -205,7 +224,7 @@ export async function updateUsuarioEncargado(usuarioId: number, formData: FormDa
 
 export async function deleteUsuarioEncargado(usuarioId: number): Promise<ActionResult> {
   try {
-    await requirePermiso("usuarios:gestionar");
+    const session = await requirePermiso("usuarios:gestionar");
     const usuario = await getUsuarioById(usuarioId);
     if (!usuario) return actionError("El usuario no existe.");
 
@@ -213,6 +232,15 @@ export async function deleteUsuarioEncargado(usuarioId: number): Promise<ActionR
       await actualizarEstudiante(usuario.id_estudiante, { id_club: null });
     }
     await dbEliminarUsuario(usuarioId);
+
+    await registrarBitacora({
+      session,
+      accion: "usuario.eliminar_encargado",
+      entidad: "usuario",
+      entidadId: usuarioId,
+      descripcion: `Eliminó al encargado "${usuario.nombre}" (${usuario.usuario}).`,
+    });
+
     revalidatePath("/admin/usuarios");
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
@@ -234,7 +262,7 @@ async function idRolAdmin(): Promise<number> {
 
 export async function createUsuarioAdmin(formData: FormData): Promise<ActionResult<{ username: string }>> {
   try {
-    await requirePermiso("usuarios:gestionar");
+    const session = await requirePermiso("usuarios:gestionar");
 
     const parsed = usuarioAdminSchema.safeParse({
       nombre: formData.get("nombre"),
@@ -262,6 +290,15 @@ export async function createUsuarioAdmin(formData: FormData): Promise<ActionResu
     });
     await guardarPermisosDeUsuario(usuario.id_usuario, parsed.data.permisos);
 
+    await registrarBitacora({
+      session,
+      accion: "usuario.crear_admin",
+      entidad: "usuario",
+      entidadId: usuario.id_usuario,
+      descripcion: `Creó al administrador "${parsed.data.nombre}" (${parsed.data.username}).`,
+      metadata: { permisos: parsed.data.permisos },
+    });
+
     revalidatePath("/admin/usuarios");
     revalidateTag(CACHE_TAGS.usuarios);
     return actionOk({ username: parsed.data.username });
@@ -272,7 +309,7 @@ export async function createUsuarioAdmin(formData: FormData): Promise<ActionResu
 
 export async function updateUsuarioAdmin(usuarioId: number, formData: FormData): Promise<ActionResult> {
   try {
-    await requirePermiso("usuarios:gestionar");
+    const session = await requirePermiso("usuarios:gestionar");
 
     const usuario = await getUsuarioById(usuarioId);
     if (!usuario) return actionError("El usuario no existe.");
@@ -299,6 +336,15 @@ export async function updateUsuarioAdmin(usuarioId: number, formData: FormData):
       ...(parsed.data.password ? { primer_inicio_sesion: true } : {}),
     });
     await guardarPermisosDeUsuario(usuarioId, parsed.data.permisos);
+
+    await registrarBitacora({
+      session,
+      accion: "usuario.actualizar_admin",
+      entidad: "usuario",
+      entidadId: usuarioId,
+      descripcion: `Actualizó al administrador "${parsed.data.nombre}" (${parsed.data.username}).`,
+      metadata: { permisos: parsed.data.permisos, contraseñaCambiada: !!parsed.data.password },
+    });
 
     revalidatePath("/admin/usuarios");
     revalidateTag(CACHE_TAGS.usuarios);

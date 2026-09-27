@@ -5,11 +5,12 @@ import { CACHE_TAGS } from "@/lib/db/cached";
 import { configuracionSchema } from "@/lib/validations/configuracion.schema";
 import { guardarConfiguracion } from "@/lib/db/configuracion";
 import { requirePermiso } from "@/lib/auth/guards";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 export async function actualizarConfiguracion(formData: FormData): Promise<ActionResult> {
   try {
-    await requirePermiso("configuracion:editar");
+    const session = await requirePermiso("configuracion:editar");
 
     const parsed = configuracionSchema.safeParse({
       diaClub: formData.get("diaClub") ?? "",
@@ -22,6 +23,14 @@ export async function actualizarConfiguracion(formData: FormData): Promise<Actio
     await guardarConfiguracion({
       dia_club: parsed.data.diaClub || null,
       hora_club: parsed.data.horaClub || null,
+    });
+
+    await registrarBitacora({
+      session,
+      accion: "configuracion.actualizar",
+      entidad: "configuracion",
+      descripcion: `Cambió el horario de pastoral a ${parsed.data.diaClub || "sin definir"} ${parsed.data.horaClub || ""}`.trim(),
+      metadata: { diaClub: parsed.data.diaClub, horaClub: parsed.data.horaClub },
     });
 
     revalidatePath("/admin/usuarios");

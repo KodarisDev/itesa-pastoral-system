@@ -5,6 +5,7 @@ import { getClubesConMiembros } from "@/lib/reportes/clubes";
 import { generarExcelEstudiantesClub } from "@/lib/reportes/clubes-excel";
 import { generarPdfEstudiantesClub } from "@/lib/reportes/clubes-pdf";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { registrarBitacora } from "@/lib/audit";
 
 function slug(texto: string) {
   return texto
@@ -42,6 +43,16 @@ export async function GET(req: NextRequest) {
   const fechaGeneracionTexto = ahora.toLocaleDateString("es-DO", { year: "numeric", month: "long", day: "numeric" });
   const clubNombreParaArchivo = idClub != null ? slug(grupos[0].club.nombre) : "todos-los-clubes";
   const fechaArchivo = ahora.toISOString().slice(0, 10);
+
+  await registrarBitacora({
+    session,
+    accion: "club.exportar_estudiantes",
+    entidad: "club",
+    entidadId: idClub ?? null,
+    descripcion: `Exportó estudiantes de ${idClub != null ? `"${grupos[0].club.nombre}"` : "todos los clubes"} en ${formato.toUpperCase()}.`,
+    metadata: { idClub, formato },
+    ip,
+  });
 
   if (formato === "pdf") {
     const buffer = await generarPdfEstudiantesClub(grupos, fechaGeneracionTexto);

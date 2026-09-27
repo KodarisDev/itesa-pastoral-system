@@ -37,7 +37,7 @@ export function Navbar() {
         <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex shrink-0 items-center">
             <Image
-              src="/branding/logot.jfif"
+              src="/branding/logot.jpg"
               alt="Pastoral Salesiana del ITESA"
               width={180}
               height={94}

@@ -208,6 +208,34 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["configuracion"]["Insert"]>;
         Relationships: [];
       };
+      bitacora: {
+        Row: {
+          id_bitacora: number;
+          id_usuario: number | null;
+          usuario_nombre: string | null;
+          accion: string;
+          entidad: string;
+          entidad_id: string | null;
+          descripcion: string | null;
+          metadata: Record<string, unknown> | null;
+          ip: string | null;
+          creado_en: string;
+        };
+        Insert: {
+          id_bitacora?: number;
+          id_usuario?: number | null;
+          usuario_nombre?: string | null;
+          accion: string;
+          entidad: string;
+          entidad_id?: string | null;
+          descripcion?: string | null;
+          metadata?: Record<string, unknown> | null;
+          ip?: string | null;
+          creado_en?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["bitacora"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -7,6 +7,7 @@ import { getClubById, contarMiembros } from "@/lib/db/clubes";
 import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso, requirePermisoEnClub } from "@/lib/auth/guards";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 export async function inscribirEstudianteEnMiClub(estudianteId: number): Promise<ActionResult> {
@@ -31,6 +32,14 @@ export async function inscribirEstudianteEnMiClub(estudianteId: number): Promise
 
     await actualizarEstudiante(estudianteId, { id_club: idClub });
 
+    await registrarBitacora({
+      session,
+      accion: "estudiante.inscribir",
+      entidad: "estudiante",
+      entidadId: estudianteId,
+      descripcion: `Inscribió a ${estudiante.nombre} ${estudiante.apellido} en el club "${club.nombre}".`,
+    });
+
     revalidatePath("/club/inscripcion");
     revalidatePath("/club/miembros");
     revalidatePath("/club");
@@ -47,7 +56,7 @@ export async function inscribirEstudianteEnMiClub(estudianteId: number): Promise
 
 export async function inscribirEstudiante(values: InscripcionFormValues): Promise<ActionResult> {
   try {
-    await requirePermiso("estudiantes:inscribir");
+    const session = await requirePermiso("estudiantes:inscribir");
 
     const parsed = inscripcionSchema.safeParse(values);
     if (!parsed.success) {
@@ -66,6 +75,14 @@ export async function inscribirEstudiante(values: InscripcionFormValues): Promis
     if (cupo <= 0) return actionError(`El club "${club.nombre}" ya no tiene cupo disponible.`);
 
     await actualizarEstudiante(parsed.data.estudianteId, { id_club: parsed.data.clubId });
+
+    await registrarBitacora({
+      session,
+      accion: "estudiante.inscribir",
+      entidad: "estudiante",
+      entidadId: parsed.data.estudianteId,
+      descripcion: `Inscribió a ${estudiante.nombre} ${estudiante.apellido} en el club "${club.nombre}".`,
+    });
 
     revalidatePath("/admin/inscripcion");
     revalidatePath("/admin/clubes");

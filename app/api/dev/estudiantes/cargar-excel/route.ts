@@ -5,6 +5,7 @@ import { upsertEstudiantePorMatricula } from "@/lib/db/estudiantes";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso } from "@/lib/auth/guards";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { registrarBitacora } from "@/lib/audit";
 
 const MAX_EXCEL_BYTES = 10 * 1024 * 1024;
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!consumeRateLimit("excel-upload", ip, 3, 15 * 60 * 1000)) {
       return NextResponse.json({ error: "Demasiadas cargas. Espera unos minutos antes de volver a intentarlo." }, { status: 429 });
     }
-    await requirePermiso("estudiantes:promover");
+    const session = await requirePermiso("estudiantes:promover");
 
     const formData = await req.formData();
     const archivo = formData.get("archivo");
@@ -49,6 +50,14 @@ export async function POST(req: NextRequest) {
 
     const insertados = await Promise.all(resultado.filas.map((fila) => upsertEstudiantePorMatricula(fila)));
     revalidateTag(CACHE_TAGS.estudiantes);
+
+    await registrarBitacora({
+      session,
+      accion: "estudiante.carga_masiva",
+      entidad: "estudiante",
+      descripcion: `Cargó el Excel maestro de estudiantes (21 cursos): ${insertados.length} procesado(s).`,
+      metadata: { procesados: insertados.length, duplicadas: resultado.duplicadas },
+    });
 
     return NextResponse.json(
       {

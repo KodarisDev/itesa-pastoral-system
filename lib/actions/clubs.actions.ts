@@ -19,6 +19,7 @@ import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { getUsuarioByEstudianteId } from "@/lib/db/usuarios";
 import { subirFotoClub, borrarFotoClub } from "@/lib/supabase/storage";
 import { requirePermiso } from "@/lib/auth/guards";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 /** Sube/cambia la foto del club que dirige el encargado en sesión — solo si es el encargado PRINCIPAL de ese club. */
@@ -51,6 +52,14 @@ export async function actualizarFotoMiClub(formData: FormData): Promise<ActionRe
     await actualizarClub(idClub, { foto: fotoUrl });
     if (fotoAnterior) await borrarFotoClub(fotoAnterior).catch(() => {});
 
+    await registrarBitacora({
+      session,
+      accion: "club.actualizar_foto",
+      entidad: "club",
+      entidadId: idClub,
+      descripcion: `Actualizó la foto del club "${club.nombre}".`,
+    });
+
     revalidatePath("/club");
     revalidatePath("/admin/clubes");
     revalidateTag(CACHE_TAGS.clubes);
@@ -62,7 +71,7 @@ export async function actualizarFotoMiClub(formData: FormData): Promise<ActionRe
 
 export async function createClub(formData: FormData): Promise<ActionResult<{ id: number }>> {
   try {
-    await requirePermiso("clubes:gestionar");
+    const session = await requirePermiso("clubes:gestionar");
 
     const parsed = clubSchema.safeParse({
       nombre: formData.get("nombre"),
@@ -95,6 +104,15 @@ export async function createClub(formData: FormData): Promise<ActionResult<{ id:
       await agregarEncargado(club.id_club, parsed.data.encargadoSecundarioId, false);
     }
 
+    await registrarBitacora({
+      session,
+      accion: "club.crear",
+      entidad: "club",
+      entidadId: club.id_club,
+      descripcion: `Creó el club "${club.nombre}".`,
+      metadata: { nombre: club.nombre, capacidad: parsed.data.capacidad },
+    });
+
     revalidatePath("/admin/clubes");
     revalidateTag(CACHE_TAGS.clubes);
     return actionOk({ id: club.id_club });
@@ -105,7 +123,7 @@ export async function createClub(formData: FormData): Promise<ActionResult<{ id:
 
 export async function updateClub(clubId: number, formData: FormData): Promise<ActionResult> {
   try {
-    await requirePermiso("clubes:gestionar");
+    const session = await requirePermiso("clubes:gestionar");
 
     const club = await getClubById(clubId);
     if (!club) return actionError("El club no existe.");
@@ -156,6 +174,15 @@ export async function updateClub(clubId: number, formData: FormData): Promise<Ac
       await agregarEncargado(clubId, secundarioNuevoId, false);
     }
 
+    await registrarBitacora({
+      session,
+      accion: "club.actualizar",
+      entidad: "club",
+      entidadId: clubId,
+      descripcion: `Actualizó el club "${parsed.data.nombre}".`,
+      metadata: { nombre: parsed.data.nombre, capacidad: parsed.data.capacidad },
+    });
+
     revalidatePath("/admin/clubes");
     revalidatePath(`/admin/clubes/${clubId}`);
     revalidateTag(CACHE_TAGS.clubes);
@@ -167,10 +194,19 @@ export async function updateClub(clubId: number, formData: FormData): Promise<Ac
 
 export async function deleteClub(clubId: number): Promise<ActionResult> {
   try {
-    await requirePermiso("clubes:gestionar");
+    const session = await requirePermiso("clubes:gestionar");
     const club = await getClubById(clubId);
     if (!club) return actionError("El club no existe.");
     await eliminarClub(clubId);
+
+    await registrarBitacora({
+      session,
+      accion: "club.eliminar",
+      entidad: "club",
+      entidadId: clubId,
+      descripcion: `Eliminó el club "${club.nombre}".`,
+    });
+
     revalidatePath("/admin/clubes");
     revalidateTag(CACHE_TAGS.clubes);
     return actionOk(undefined);
@@ -181,7 +217,7 @@ export async function deleteClub(clubId: number): Promise<ActionResult> {
 
 export async function removeMiembroDeClub(clubId: number, estudianteId: number): Promise<ActionResult> {
   try {
-    await requirePermiso("estudiantes:gestionar");
+    const session = await requirePermiso("estudiantes:gestionar");
 
     const estudiante = await getEstudianteById(estudianteId);
     if (!estudiante) return actionError("El estudiante no existe.");
@@ -196,6 +232,15 @@ export async function removeMiembroDeClub(clubId: number, estudianteId: number):
     }
 
     await actualizarEstudiante(estudianteId, { id_club: null });
+
+    await registrarBitacora({
+      session,
+      accion: "club.quitar_miembro",
+      entidad: "estudiante",
+      entidadId: estudianteId,
+      descripcion: `Quitó a ${estudiante.nombre} ${estudiante.apellido} del club #${clubId}.`,
+    });
+
     revalidatePath(`/admin/clubes/${clubId}`);
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");
@@ -210,7 +255,7 @@ export async function removeMiembroDeClub(clubId: number, estudianteId: number):
 
 export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId: number): Promise<ActionResult> {
   try {
-    await requirePermiso("estudiantes:gestionar");
+    const session = await requirePermiso("estudiantes:gestionar");
 
     const clubDestino = await getClubById(clubDestinoId);
     if (!clubDestino) return actionError("El club no existe.");
@@ -233,6 +278,15 @@ export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId:
     if (cupo <= 0) return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
 
     await actualizarEstudiante(estudianteId, { id_club: clubDestinoId });
+
+    await registrarBitacora({
+      session,
+      accion: "estudiante.cambiar_club",
+      entidad: "estudiante",
+      entidadId: estudianteId,
+      descripcion: `Cambió a ${estudiante.nombre} ${estudiante.apellido} al club "${clubDestino.nombre}".`,
+      metadata: { clubAnteriorId: estudiante.id_club, clubDestinoId },
+    });
 
     revalidatePath("/admin/clubes");
     revalidatePath("/admin/estudiantes");

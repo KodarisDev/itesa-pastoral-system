@@ -5,6 +5,7 @@ import { parsearRosterCuarto, type ResultadoParseoRoster } from "@/lib/excel";
 import { upsertEstudiantePorMatricula, promoverEstudiantes } from "@/lib/db/estudiantes";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso } from "@/lib/auth/guards";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 const MAX_EXCEL_BYTES = 10 * 1024 * 1024;
@@ -57,7 +58,7 @@ export async function ejecutarPromocion(
   formData: FormData,
 ): Promise<ActionResult<{ promovidos: number; desactivados: number; procesados: number; duplicadas: string[] }>> {
   try {
-    await requirePermiso("estudiantes:promover");
+    const session = await requirePermiso("estudiantes:promover");
 
     const archivo = formData.get("archivo");
     if (!(archivo instanceof File) || archivo.size === 0) {
@@ -82,6 +83,14 @@ export async function ejecutarPromocion(
     const { promovidos, desactivados } = await promoverEstudiantes(idsNoPasaron);
 
     const insertados = await Promise.all(resultado.filas.map((fila) => upsertEstudiantePorMatricula(fila)));
+
+    await registrarBitacora({
+      session,
+      accion: "estudiante.promocion",
+      entidad: "estudiante",
+      descripcion: `Ejecutó la promoción de curso: ${promovidos} promovido(s), ${desactivados} desactivado(s), ${insertados.length} de 4to procesado(s).`,
+      metadata: { promovidos, desactivados, procesados: insertados.length, duplicadas: resultado.duplicadas, idsNoPasaron },
+    });
 
     revalidatePath("/admin/estudiantes");
     revalidatePath("/admin/promocion");

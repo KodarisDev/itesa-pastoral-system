@@ -9,6 +9,7 @@ import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 import { getConfiguracion } from "@/lib/db/configuracion";
 import { calcularVentanaAsistencia } from "@/lib/asistencia-ventana";
 import { requirePermisoEnClub } from "@/lib/auth/guards";
+import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 export async function submitAttendance(values: AsistenciaFormValues): Promise<ActionResult> {
@@ -44,6 +45,16 @@ export async function submitAttendance(values: AsistenciaFormValues): Promise<Ac
       }));
 
     await guardarAsistencia(registros);
+
+    const presentes = registros.filter((r) => r.estado === "Presente").length;
+    await registrarBitacora({
+      session,
+      accion: "asistencia.pasar",
+      entidad: "asistencia",
+      entidadId: `${parsed.data.clubId}_${parsed.data.fecha}`,
+      descripcion: `Pasó lista del club #${parsed.data.clubId} para el ${parsed.data.fecha}: ${presentes}/${registros.length} presentes.`,
+      metadata: { clubId: parsed.data.clubId, fecha: parsed.data.fecha, presentes, total: registros.length },
+    });
 
     revalidatePath("/club/asistencia");
     revalidatePath("/club/historial");

@@ -5,6 +5,7 @@ import { getClubById, getClubes } from "@/lib/db/clubes";
 import { getSesionesEnriquecidas, type FiltroAsistencia } from "@/lib/reportes/asistencia";
 import { generarExcelAsistencia } from "@/lib/reportes/asistencia-excel";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { registrarBitacora } from "@/lib/audit";
 
 function slug(texto: string) {
   return texto
@@ -79,6 +80,15 @@ export async function GET(req: NextRequest) {
 
   const fechaArchivo = new Date().toISOString().slice(0, 10);
   const filename = `asistencia_${clubNombreParaArchivo}_${fechaArchivo}.xlsx`;
+
+  await registrarBitacora({
+    session,
+    accion: "asistencia.exportar",
+    entidad: "asistencia",
+    descripcion: `Exportó asistencia a Excel (${descripcion.join(" · ")}).`,
+    metadata: { filtro, ip },
+    ip,
+  });
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
