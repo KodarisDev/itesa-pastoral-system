@@ -74,8 +74,20 @@ export function CardsGridSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
-/** Fila de filtros (búsqueda + selects), como en las tablas de Estudiantes/Clubes/Asistencias. */
-export function FilterBarSkeleton({ widths = ["w-full max-w-sm", "w-44", "w-52"] }: { widths?: string[] }) {
+/**
+ * Fila de filtros (búsqueda + selects), como en las tablas de
+ * Estudiantes/Clubes/Asistencias. `actionWidths` agrega botones sin label
+ * empujados a la derecha con `ml-auto` — para las páginas donde el botón de
+ * acción (Nuevo club, Cargar 4to nuevo/Promoción, Nuevo encargado...) vive
+ * dentro de la misma fila de filtros en vez de en el encabezado.
+ */
+export function FilterBarSkeleton({
+  widths = ["w-full max-w-sm", "w-44", "w-52"],
+  actionWidths,
+}: {
+  widths?: string[];
+  actionWidths?: string[];
+}) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
       {widths.map((w, i) => (
@@ -84,20 +96,13 @@ export function FilterBarSkeleton({ widths = ["w-full max-w-sm", "w-44", "w-52"]
           <Skeleton className="h-10 w-full rounded-xl" />
         </div>
       ))}
-    </div>
-  );
-}
-
-/** Barra de navegación por curso de Estudiantes: flecha — dropdown + contador — flecha. */
-export function CursoNavSkeleton() {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
-      <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
-      <div className="flex flex-col items-center gap-1.5">
-        <Skeleton className="h-9 w-32 rounded-xl" />
-        <Skeleton className="h-3 w-40" />
-      </div>
-      <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+      {actionWidths && actionWidths.length > 0 && (
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
+          {actionWidths.map((w, i) => (
+            <Skeleton key={i} className={`h-10 rounded-xl ${w}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

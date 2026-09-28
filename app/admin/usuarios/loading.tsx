@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { HeaderSkeleton, TableSkeleton } from "@/components/shared/PageSkeletons";
+import { HeaderSkeleton, FilterBarSkeleton, TableSkeleton } from "@/components/shared/PageSkeletons";
 
 export default function Loading() {
   return (
@@ -10,10 +10,9 @@ export default function Loading() {
         <Skeleton className="h-9 w-28 rounded-t-lg" />
         <Skeleton className="h-9 w-20 rounded-t-lg" />
       </div>
-      <div className="flex justify-end">
-        <Skeleton className="h-10 w-40 rounded-xl" />
-      </div>
-      <TableSkeleton rows={6} cols={4} />
+      {/* Pestaña "Encargados": filtro de Tipo (a la izquierda) + botón Nuevo encargado (a la derecha) */}
+      <FilterBarSkeleton widths={["w-40"]} actionWidths={["w-40"]} />
+      <TableSkeleton rows={6} cols={6} />
     </div>
   );
 }

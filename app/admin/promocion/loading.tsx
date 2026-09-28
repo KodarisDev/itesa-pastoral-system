@@ -11,13 +11,10 @@ export default function Loading() {
           <Skeleton className="h-3 w-80 max-w-full" />
         </div>
         <Skeleton className="h-20 w-full rounded-2xl" />
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Skeleton className="h-10 w-36 rounded-xl" />
           <Skeleton className="h-10 w-56 rounded-xl" />
         </div>
-      </div>
-      <div className="flex justify-end">
-        <Skeleton className="h-10 w-44 rounded-xl" />
       </div>
     </div>
   );
