@@ -13,7 +13,7 @@ interface SwitchProps {
 /** Switch hand-rolled sobre un checkbox oculto, per §7.5 de la guía de diseño. */
 export function Switch({ checked, onCheckedChange, label, id, disabled }: SwitchProps) {
   return (
-    <label htmlFor={id} className={cn("inline-flex items-center gap-2", disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer")}>
+    <label htmlFor={id} className={cn("relative inline-flex items-center gap-2", disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer")}>
       <input
         id={id}
         type="checkbox"
