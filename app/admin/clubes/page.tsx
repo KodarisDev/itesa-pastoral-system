@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ClubsManager } from "@/components/admin/ClubsManager";
 import { ClubFormDialog } from "@/components/admin/ClubFormDialog";
 import { ExportEstudiantesClubModal } from "@/components/admin/ExportEstudiantesClubModal";
-import { getClubesCached, getEncargadosCached, getUsuariosCached, getEstudiantesCached, getRolesCached } from "@/lib/db/cached";
+import { getClubesCached, getEncargadosCached, getUsuariosCached, getEstudiantesCached, getRolesCached, getSubclubesCached, getEncargadosSubclubCached } from "@/lib/db/cached";
 import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function AdminClubesPage() {
   await requireVista("clubes:ver");
 
-  const [clubes, usuarios, estudiantes, encargados, roles] = await Promise.all([
+  const [clubes, usuarios, estudiantes, encargados, roles, subclubes, encargadosSubclub] = await Promise.all([
     getClubesCached(),
     getUsuariosCached(),
     getEstudiantesCached(),
     getEncargadosCached(),
     getRolesCached(),
+    getSubclubesCached(),
+    getEncargadosSubclubCached(),
   ]);
   const idRolEncargado = roles.find((r) => r.nombre === "encargado_club")?.id_rol;
   const usuariosEncargados = usuarios.filter((u) => u.id_rol === idRolEncargado);
@@ -33,6 +35,8 @@ export default async function AdminClubesPage() {
         usuarios={usuariosEncargados}
         encargados={encargados}
         estudiantes={estudiantes}
+        subclubes={subclubes}
+        encargadosSubclub={encargadosSubclub}
         actions={
           <>
             <ExportEstudiantesClubModal clubes={clubes} />

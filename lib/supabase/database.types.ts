@@ -118,6 +118,38 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["encargados"]["Insert"]>;
         Relationships: [];
       };
+      subclubes: {
+        Row: {
+          id_subclub: number;
+          id_club: number;
+          nombre: string;
+          creado_en: string;
+        };
+        Insert: {
+          id_subclub?: number;
+          id_club: number;
+          nombre: string;
+          creado_en?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["subclubes"]["Insert"]>;
+        Relationships: [];
+      };
+      encargados_subclub: {
+        Row: {
+          id_encargado_subclub: number;
+          id_subclub: number;
+          id_usuario: number;
+          creado_en: string;
+        };
+        Insert: {
+          id_encargado_subclub?: number;
+          id_subclub: number;
+          id_usuario: number;
+          creado_en?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["encargados_subclub"]["Insert"]>;
+        Relationships: [];
+      };
       estudiantes: {
         Row: {
           id_estudiante: number;
@@ -130,6 +162,7 @@ export interface Database {
           curso: string | null;
           numero: number | null;
           activo: boolean;
+          id_subclub: number | null;
           creado_en: string;
         };
         Insert: {
@@ -141,6 +174,7 @@ export interface Database {
           curso?: string | null;
           numero?: number | null;
           activo?: boolean;
+          id_subclub?: number | null;
           creado_en?: string;
         };
         Update: Partial<Database["public"]["Tables"]["estudiantes"]["Insert"]>;
@@ -155,6 +189,7 @@ export interface Database {
           estado: "Presente" | "Ausente" | "Tarde" | "Justificado";
           nota: string | null;
           id_usuario: number;
+          id_subclub: number | null;
           creado_en: string;
         };
         Insert: {
@@ -165,6 +200,7 @@ export interface Database {
           estado: "Presente" | "Ausente" | "Tarde" | "Justificado";
           nota?: string | null;
           id_usuario: number;
+          id_subclub?: number | null;
           creado_en?: string;
         };
         Update: Partial<Database["public"]["Tables"]["asistencia"]["Insert"]>;

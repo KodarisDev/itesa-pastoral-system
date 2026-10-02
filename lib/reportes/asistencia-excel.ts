@@ -75,10 +75,23 @@ export async function generarExcelAsistencia(
     copiarPlantilla(hojaPlantilla, ws);
     prepararHoja(ws, clubNombre, fecha);
 
+    // Si el club tiene subclubes, se agrega una columna "Subclub" y se ordena por subclub.
+    const usaSubclubes = sesionesClub.some((s) => s.registros.some((r) => r.subclubId != null));
+    if (usaSubclubes) {
+      const encabezado = ws.getCell("G7");
+      encabezado.value = "Subclub";
+      encabezado.style = { ...ws.getCell("F7").style };
+      ws.getColumn(7).width = ws.getColumn(6).width ?? 20;
+      ws.autoFilter = { from: "A7", to: "G7" };
+    }
+
     let fila = 8;
     const filasOrdenadas = [...sesionesClub].sort((a, b) => a.fecha.localeCompare(b.fecha));
     for (const sesion of filasOrdenadas) {
-      const registrosOrdenados = [...sesion.registros].sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
+      const registrosOrdenados = [...sesion.registros].sort(
+        (a, b) =>
+          (a.subclubNombre ?? "").localeCompare(b.subclubNombre ?? "") || a.nombreCompleto.localeCompare(b.nombreCompleto),
+      );
       for (const registro of registrosOrdenados) {
         const row = ws.getRow(fila);
         row.getCell(1).value = registro.nombre;
@@ -87,6 +100,11 @@ export async function generarExcelAsistencia(
         row.getCell(4).value = registro.matricula;
         row.getCell(5).value = registro.presente ? "Presente" : "Ausente";
         row.getCell(6).value = sesion.tomadaPorNombre;
+        if (usaSubclubes) {
+          const celda = row.getCell(7);
+          celda.value = registro.subclubNombre ?? "General";
+          celda.style = { ...row.getCell(6).style };
+        }
         fila += 1;
       }
     }

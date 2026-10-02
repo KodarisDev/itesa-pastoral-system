@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RegistrosSesion } from "@/components/shared/RegistrosSesion";
 import type { SesionEnriquecida } from "@/lib/reportes/asistencia";
 
 interface AttendanceHistoryTableProps {
@@ -87,19 +88,7 @@ export function AttendanceHistoryTable({ sesiones }: AttendanceHistoryTableProps
                 </Badge>
               </summary>
               <div className="divide-y divide-gray-100 border-t border-gray-100 px-4 dark:divide-neutral-800 dark:border-neutral-800">
-                {sesion.registros.map((r) => (
-                  <div key={r.estudianteId} className="py-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700 dark:text-gray-300">{r.nombreCompleto}</span>
-                      <Badge variant={r.presente ? "success" : "destructive"}>
-                        {r.presente ? "Presente" : "Ausente"}
-                      </Badge>
-                    </div>
-                    {!r.presente && r.justificacion && (
-                      <p className="mt-1 text-xs italic text-gray-500 dark:text-gray-400">&ldquo;{r.justificacion}&rdquo;</p>
-                    )}
-                  </div>
-                ))}
+                <RegistrosSesion registros={sesion.registros} />
               </div>
             </details>
           ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { RegistrosSesion } from "@/components/shared/RegistrosSesion";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -169,20 +170,7 @@ export function AttendanceManager({ sesiones, clubes }: AttendanceManagerProps) 
                 <div className="flex items-center justify-between py-2 text-xs text-gray-400 dark:text-gray-500">
                   <span>Tomada por {sesion.tomadaPorNombre}</span>
                 </div>
-                {sesion.registros.map((r) => (
-                  <div key={r.estudianteId} className="py-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div>
-                        <span className="text-gray-700 dark:text-gray-300">{r.nombreCompleto}</span>
-                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{r.curso}</span>
-                      </div>
-                      <Badge variant={r.presente ? "success" : "destructive"}>{r.presente ? "Presente" : "Ausente"}</Badge>
-                    </div>
-                    {!r.presente && r.justificacion && (
-                      <p className="mt-1 text-xs italic text-gray-500 dark:text-gray-400">&ldquo;{r.justificacion}&rdquo;</p>
-                    )}
-                  </div>
-                ))}
+                <RegistrosSesion registros={sesion.registros} mostrarCurso />
               </div>
             </details>
           ))}

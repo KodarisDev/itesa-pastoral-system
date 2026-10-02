@@ -231,7 +231,7 @@ export async function removeMiembroDeClub(clubId: number, estudianteId: number):
       }
     }
 
-    await actualizarEstudiante(estudianteId, { id_club: null });
+    await actualizarEstudiante(estudianteId, { id_club: null, id_subclub: null });
 
     await registrarBitacora({
       session,
@@ -277,7 +277,7 @@ export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId:
     const cupo = (clubDestino.capacidad ?? Infinity) - (await contarMiembros(clubDestinoId));
     if (cupo <= 0) return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
 
-    await actualizarEstudiante(estudianteId, { id_club: clubDestinoId });
+    await actualizarEstudiante(estudianteId, { id_club: clubDestinoId, id_subclub: null });
 
     await registrarBitacora({
       session,

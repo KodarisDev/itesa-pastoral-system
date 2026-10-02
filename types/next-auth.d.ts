@@ -7,6 +7,8 @@ interface SesionExtra {
   rolNombre: string;
   permisos: Permission[];
   clubIds: number[];
+  clubGeneralIds: number[];
+  subclubIds: number[];
   clubPrincipalId: number | null;
   idEstudiante: number | null;
   primerInicioSesion: boolean;

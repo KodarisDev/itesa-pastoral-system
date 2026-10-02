@@ -26,4 +26,6 @@ export interface Estudiante {
   /** Número de orden del estudiante dentro de su curso, tal como viene en el listado oficial (columna "NO."). */
   numero: number | null;
   activo: boolean;
+  /** Subclub dentro de su club (null = sin subclub). Opcional para no romper altas que no lo usan. */
+  id_subclub?: number | null;
 }

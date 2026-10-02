@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { LayoutDashboard, ClipboardCheck, Users, History, UserPlus, UserX } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, Users, History, UserPlus, UserX, Network } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type DashboardNavItem } from "@/components/shared/DashboardShell";
 import { SignOutButton } from "@/components/shared/SignOutButton";
@@ -15,6 +15,7 @@ const NAV_ITEMS: DashboardNavItem[] = [
   { href: "/club", label: "Mi club", icon: <LayoutDashboard className={ICON_CLASS} aria-hidden="true" /> },
   { href: "/club/asistencia", label: "Pasar lista", icon: <ClipboardCheck className={ICON_CLASS} aria-hidden="true" /> },
   { href: "/club/inscripcion", label: "Inscripción", icon: <UserPlus className={ICON_CLASS} aria-hidden="true" /> },
+  { href: "/club/subclubes", label: "Subclubes", icon: <Network className={ICON_CLASS} aria-hidden="true" /> },
   { href: "/club/miembros", label: "Miembros", icon: <Users className={ICON_CLASS} aria-hidden="true" /> },
   { href: "/club/historial", label: "Historial de asistencia", icon: <History className={ICON_CLASS} aria-hidden="true" /> },
 ];
@@ -46,8 +47,14 @@ export default async function ClubLayout({ children }: { children: React.ReactNo
     );
   }
 
+  // Los encargados de subclub solo pasan lista y consultan: sin Inscripción ni gestión de Subclubes.
+  const esEncargadoGeneral = session.user.clubGeneralIds.length > 0;
+  const navItems = esEncargadoGeneral
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.href !== "/club/inscripcion" && item.href !== "/club/subclubes");
+
   return (
-    <DashboardShell title="Mi club" subtitle="Panel del encargado" navItems={NAV_ITEMS} userName={session.user.name ?? "Encargado"}>
+    <DashboardShell title="Mi club" subtitle="Panel del encargado" navItems={navItems} userName={session.user.name ?? "Encargado"}>
       {children}
     </DashboardShell>
   );

@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const asistenciaSchema = z.object({
   clubId: z.number().int().positive(),
+  /** Subclub al que se le pasa lista; null/ausente = lista general del club (encargado general). */
+  subclubId: z.number().int().positive().nullish(),
   fecha: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Selecciona una fecha válida."),

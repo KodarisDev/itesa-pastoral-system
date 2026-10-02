@@ -6,18 +6,18 @@ import { inscripcionSchema, type InscripcionFormValues } from "@/lib/validations
 import { getClubById, contarMiembros } from "@/lib/db/clubes";
 import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { CACHE_TAGS } from "@/lib/db/cached";
-import { requirePermiso, requirePermisoEnClub } from "@/lib/auth/guards";
+import { requirePermiso, requirePermisoComoEncargadoGeneral } from "@/lib/auth/guards";
 import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
 export async function inscribirEstudianteEnMiClub(estudianteId: number): Promise<ActionResult> {
   try {
     const session = await auth();
-    if (!session || session.user.clubIds.length === 0) {
+    if (!session || session.user.clubGeneralIds.length === 0) {
       return actionError("No tienes permiso para realizar esta acción.");
     }
-    const idClub = session.user.clubPrincipalId ?? session.user.clubIds[0];
-    await requirePermisoEnClub("estudiantes:inscribir", idClub);
+    const idClub = session.user.clubPrincipalId ?? session.user.clubGeneralIds[0];
+    await requirePermisoComoEncargadoGeneral("estudiantes:inscribir", idClub);
 
     const estudiante = await getEstudianteById(estudianteId);
     if (!estudiante) return actionError("El estudiante no existe en el listado vigente.");

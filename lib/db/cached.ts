@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { getClubes, getEncargados } from "./clubes";
+import { getSubclubes, getEncargadosSubclub } from "./subclubes";
 import { getEstudiantes } from "./estudiantes";
 import { getUsuarios } from "./usuarios";
 import { getConfiguracion } from "./configuracion";
@@ -19,6 +20,7 @@ export const CACHE_TAGS = {
   configuracion: "configuracion",
   roles: "roles",
   asistencia: "asistencia",
+  subclubes: "subclubes",
 } as const;
 
 export const getClubesCached = unstable_cache(getClubes, ["db-clubes"], { tags: [CACHE_TAGS.clubes] });
@@ -30,4 +32,8 @@ export const getRolesCached = unstable_cache(getRoles, ["db-roles"], { tags: [CA
 export const getAsistenciaTodasCached = unstable_cache(getAsistenciaTodas, ["db-asistencia-todas"], { tags: [CACHE_TAGS.asistencia] });
 export const getAsistenciaPorClubCached = unstable_cache(getAsistenciaPorClub, ["db-asistencia-por-club"], {
   tags: [CACHE_TAGS.asistencia],
+});
+export const getSubclubesCached = unstable_cache(getSubclubes, ["db-subclubes"], { tags: [CACHE_TAGS.subclubes] });
+export const getEncargadosSubclubCached = unstable_cache(getEncargadosSubclub, ["db-encargados-subclub"], {
+  tags: [CACHE_TAGS.subclubes],
 });

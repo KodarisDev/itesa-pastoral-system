@@ -16,6 +16,19 @@ export interface Encargado {
   encargado_principal: boolean;
 }
 
+/** Agrupación interna de un club: sin foto ni identidad propia; sus encargados son siempre secundarios. */
+export interface Subclub {
+  id_subclub: number;
+  id_club: number;
+  nombre: string;
+}
+
+export interface EncargadoSubclub {
+  id_encargado_subclub: number;
+  id_subclub: number;
+  id_usuario: number;
+}
+
 /** Club + lista de encargados resueltos, para pantallas que necesitan mostrarlos juntos. */
 export interface ClubConEncargados extends Club {
   encargados: (Encargado & { usuario: { id_usuario: number; nombre: string } })[];

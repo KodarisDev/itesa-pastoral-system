@@ -10,6 +10,7 @@ export default async function ClubInscripcionPage() {
   const session = await auth();
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
   if (!idClub) redirect("/login");
+  if (!session?.user.clubGeneralIds.includes(idClub)) redirect("/club");
 
   const [club, estudiantes] = await Promise.all([getClubById(idClub), getEstudiantesCached()]);
   if (!club) redirect("/login");

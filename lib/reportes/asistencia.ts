@@ -1,5 +1,5 @@
 import { getAsistenciaPorEstudiante } from "@/lib/db/asistencia";
-import { getClubesCached, getEstudiantesCached, getUsuariosCached, getAsistenciaTodasCached, getAsistenciaPorClubCached } from "@/lib/db/cached";
+import { getClubesCached, getEstudiantesCached, getUsuariosCached, getAsistenciaTodasCached, getAsistenciaPorClubCached, getSubclubesCached } from "@/lib/db/cached";
 import type { RegistroAsistencia } from "@/lib/db/asistencia";
 
 export interface FiltroAsistencia {
@@ -17,6 +17,9 @@ export interface RegistroEnriquecido {
   matricula: string;
   presente: boolean;
   justificacion?: string;
+  /** Subclub del estudiante al pasar lista (null = lista general / sin subclub). */
+  subclubId: number | null;
+  subclubNombre: string | null;
 }
 
 export interface SesionEnriquecida {
@@ -36,6 +39,7 @@ function agruparEnSesiones(
   clubesMap: Map<number, { nombre: string }>,
   estudiantesMap: Map<number, { nombre: string; apellido: string; curso: string | null; matricula: string }>,
   usuariosMap: Map<number, { nombre: string }>,
+  subclubesMap: Map<number, { nombre: string }>,
 ): SesionEnriquecida[] {
   const porGrupo = new Map<string, RegistroAsistencia[]>();
   for (const fila of filas) {
@@ -60,6 +64,8 @@ function agruparEnSesiones(
         matricula: est?.matricula ?? "—",
         presente: f.estado === "Presente" || f.estado === "Tarde",
         justificacion: f.nota ?? undefined,
+        subclubId: f.id_subclub ?? null,
+        subclubNombre: f.id_subclub != null ? (subclubesMap.get(f.id_subclub)?.nombre ?? null) : null,
       };
     });
     sesiones.push({
@@ -67,7 +73,9 @@ function agruparEnSesiones(
       clubId: idClub,
       clubNombre: clubesMap.get(idClub)?.nombre ?? "Club eliminado",
       fecha,
-      tomadaPorNombre: usuariosMap.get(filasGrupo[0].id_usuario)?.nombre ?? "—",
+      // Varios encargados pueden haber pasado lista el mismo día (general + subclubes).
+      tomadaPorNombre:
+        Array.from(new Set(filasGrupo.map((f) => usuariosMap.get(f.id_usuario)?.nombre ?? "—"))).join(", "),
       registros,
       presentes: registros.filter((r) => r.presente).length,
       total: registros.length,
@@ -78,35 +86,39 @@ function agruparEnSesiones(
 }
 
 export async function getSesionesEnriquecidas(filtro: FiltroAsistencia = {}): Promise<SesionEnriquecida[]> {
-  const [filas, clubes, estudiantes, usuarios] = await Promise.all([
+  const [filas, clubes, estudiantes, usuarios, subclubes] = await Promise.all([
     filtro.clubId ? getAsistenciaPorClubCached(filtro.clubId) : getAsistenciaTodasCached(),
     getClubesCached(),
     getEstudiantesCached(),
     getUsuariosCached(),
+    getSubclubesCached(),
   ]);
 
   const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
   const estudiantesMap = new Map(estudiantes.map((e) => [e.id_estudiante, e]));
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
+  const subclubesMap = new Map(subclubes.map((s) => [s.id_subclub, s]));
 
   let filtradas = filas;
   if (filtro.fechaDesde) filtradas = filtradas.filter((f) => f.fecha >= filtro.fechaDesde!);
   if (filtro.fechaHasta) filtradas = filtradas.filter((f) => f.fecha <= filtro.fechaHasta!);
 
-  return agruparEnSesiones(filtradas, clubesMap, estudiantesMap, usuariosMap);
+  return agruparEnSesiones(filtradas, clubesMap, estudiantesMap, usuariosMap, subclubesMap);
 }
 
 export async function getSesionesDeEstudiante(idEstudiante: number): Promise<SesionEnriquecida[]> {
-  const [filas, clubes, estudiantes, usuarios] = await Promise.all([
+  const [filas, clubes, estudiantes, usuarios, subclubes] = await Promise.all([
     getAsistenciaPorEstudiante(idEstudiante),
     getClubesCached(),
     getEstudiantesCached(),
     getUsuariosCached(),
+    getSubclubesCached(),
   ]);
   const clubesMap = new Map(clubes.map((c) => [c.id_club, c]));
   const estudiantesMap = new Map(estudiantes.map((e) => [e.id_estudiante, e]));
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
-  return agruparEnSesiones(filas, clubesMap, estudiantesMap, usuariosMap);
+  const subclubesMap = new Map(subclubes.map((s) => [s.id_subclub, s]));
+  return agruparEnSesiones(filas, clubesMap, estudiantesMap, usuariosMap, subclubesMap);
 }
 
 export interface OpcionesFiltroAsistencia {

@@ -4,7 +4,8 @@ import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ClubMembersTable } from "@/components/admin/ClubMembersTable";
-import type { Club, Encargado, Estudiante, Usuario } from "@/types";
+import { SubclubesManager } from "@/components/shared/SubclubesManager";
+import type { Club, Encargado, EncargadoSubclub, Estudiante, Subclub } from "@/types";
 
 interface EncargadoConNombre extends Encargado {
   usuarioNombre: string;
@@ -15,10 +16,13 @@ interface ClubDetailModalProps {
   encargados: EncargadoConNombre[];
   miembros: Estudiante[];
   estudiantesEncargadosIds?: Set<number>;
+  subclubes: Subclub[];
+  encargadosSubclub: EncargadoSubclub[];
+  usuariosEncargados: { id_usuario: number; nombre: string }[];
   onClose: () => void;
 }
 
-export function ClubDetailModal({ club, encargados, miembros, estudiantesEncargadosIds, onClose }: ClubDetailModalProps) {
+export function ClubDetailModal({ club, encargados, miembros, estudiantesEncargadosIds, subclubes, encargadosSubclub, usuariosEncargados, onClose }: ClubDetailModalProps) {
   if (!club) return null;
 
   const principal = encargados.find((e) => e.encargado_principal);
@@ -70,6 +74,17 @@ export function ClubDetailModal({ club, encargados, miembros, estudiantesEncarga
           <div>
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Miembros actuales</h3>
             <ClubMembersTable clubId={club.id_club} miembros={miembros} estudiantesEncargadosIds={estudiantesEncargadosIds} />
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Subclubes</h3>
+            <SubclubesManager
+              clubId={club.id_club}
+              subclubes={subclubes}
+              miembros={miembros}
+              encargadosSubclub={encargadosSubclub}
+              usuarios={usuariosEncargados}
+            />
           </div>
         </div>
       </DialogContent>

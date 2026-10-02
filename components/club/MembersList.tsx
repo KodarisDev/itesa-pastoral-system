@@ -5,9 +5,12 @@ import type { Estudiante } from "@/types";
 export function MembersList({
   miembros,
   estudiantesEncargadosIds,
+  nombreSubclub,
 }: {
   miembros: Estudiante[];
   estudiantesEncargadosIds?: Set<number>;
+  /** id_subclub -> nombre, para mostrar el subclub de cada miembro. */
+  nombreSubclub?: Record<number, string>;
 }) {
   if (miembros.length === 0) {
     return (
@@ -36,6 +39,7 @@ export function MembersList({
                     {m.nombre} {m.apellido}
                   </span>
                   {estudiantesEncargadosIds?.has(m.id_estudiante) && <Badge variant="brand">Encargado</Badge>}
+                  {m.id_subclub != null && nombreSubclub?.[m.id_subclub] && <Badge variant="outline">{nombreSubclub[m.id_subclub]}</Badge>}
                 </div>
               </TableCell>
               <TableCell className="text-sm text-gray-600 dark:text-gray-400">{m.curso ?? "—"}</TableCell>

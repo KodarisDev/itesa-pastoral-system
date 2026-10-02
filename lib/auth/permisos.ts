@@ -1,11 +1,17 @@
 import "server-only";
 import { getPermisosDeRol, getPermisosDeUsuario } from "@/lib/db/roles";
 import { getClubesDeUsuario } from "@/lib/db/clubes";
+import { getSubclubesDeUsuario } from "@/lib/db/subclubes";
 import type { Permission, Usuario } from "@/types";
 
 export interface SesionResuelta {
   permisos: Permission[];
+  /** Clubes que puede ver: los que dirige + los padres de sus subclubes. */
   clubIds: number[];
+  /** Clubes que dirige como encargado general (pueden gestionar subclubes e inscribir). */
+  clubGeneralIds: number[];
+  /** Subclubes donde es encargado (pasa lista solo en ellos). */
+  subclubIds: number[];
   clubPrincipalId: number | null;
 }
 
@@ -15,20 +21,26 @@ export interface SesionResuelta {
  * ver Configuración > Administradores) y los clubes que dirige (vía encargados).
  */
 export async function resolverSesion(usuario: Usuario): Promise<SesionResuelta> {
-  const [permisosRol, permisosUsuario, encargos] = await Promise.all([
+  const [permisosRol, permisosUsuario, encargos, encargosSubclub] = await Promise.all([
     getPermisosDeRol(usuario.id_rol),
     getPermisosDeUsuario(usuario.id_usuario),
     getClubesDeUsuario(usuario.id_usuario),
+    getSubclubesDeUsuario(usuario.id_usuario),
   ]);
   const permisos = Array.from(new Set([...permisosRol, ...permisosUsuario]));
 
-  const clubIds = encargos.map((e) => e.id_club);
+  const clubGeneralIds = encargos.map((e) => e.id_club);
+  const subclubIds = encargosSubclub.map((e) => e.id_subclub);
+  // Un encargado de subclub ve todo el club padre, aunque no sea encargado general.
+  const clubIds = Array.from(new Set([...clubGeneralIds, ...encargosSubclub.map((e) => e.id_club)]));
   const principal = encargos.find((e) => e.encargado_principal) ?? encargos[0];
 
   return {
     permisos,
     clubIds,
-    clubPrincipalId: principal?.id_club ?? null,
+    clubGeneralIds,
+    subclubIds,
+    clubPrincipalId: principal?.id_club ?? clubIds[0] ?? null,
   };
 }
 

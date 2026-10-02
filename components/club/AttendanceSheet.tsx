@@ -18,13 +18,18 @@ import type { Estudiante } from "@/types";
 
 interface AttendanceSheetProps {
   clubId: number;
+  /** null = lista general del club (todos los miembros). */
+  subclubId: number | null;
+  grupos: { value: string; label: string }[];
+  grupo: string;
+  nombreSubclub: Record<number, string>;
   fecha: string;
   miembros: Estudiante[];
   registrosIniciales: RegistroAsistencia[];
   ventana: VentanaAsistencia;
 }
 
-export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, ventana }: AttendanceSheetProps) {
+export function AttendanceSheet({ clubId, subclubId, grupos, grupo, nombreSubclub, fecha, miembros, registrosIniciales, ventana }: AttendanceSheetProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -58,7 +63,11 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
   }, [miembros, query, curso, estado, presencia]);
 
   function handleFechaChange(nuevaFecha: string) {
-    router.push(`/club/asistencia?fecha=${nuevaFecha}`);
+    router.push(`/club/asistencia?fecha=${nuevaFecha}&grupo=${grupo}`);
+  }
+
+  function handleGrupoChange(nuevoGrupo: string) {
+    router.push(`/club/asistencia?fecha=${fecha}&grupo=${nuevoGrupo}`);
   }
 
   function handleGuardar() {
@@ -68,7 +77,7 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
         const justificacion = !presente ? justificaciones[m.id_estudiante]?.trim() || undefined : undefined;
         return { estudianteId: m.id_estudiante, presente, justificacion };
       });
-      const res = await submitAttendance({ clubId, fecha, registros });
+      const res = await submitAttendance({ clubId, subclubId, fecha, registros });
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -107,6 +116,25 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
 
       <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {grupos.length > 1 && (
+            <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+              <Label htmlFor="grupo" className="text-xs">
+                Lista de
+              </Label>
+              <Select value={grupo} onValueChange={handleGrupoChange}>
+                <SelectTrigger id="grupo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {grupos.map((g) => (
+                    <SelectItem key={g.value} value={g.value}>
+                      {g.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label htmlFor="fecha" className="text-xs">
               Fecha
@@ -170,7 +198,7 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
 
       {miembros.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
-          Tu club todavía no tiene miembros asignados.
+          {subclubId === null ? "Tu club todavía no tiene miembros asignados." : "Este subclub todavía no tiene miembros."}
         </div>
       ) : visibles.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center text-sm text-gray-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-400">
@@ -189,6 +217,7 @@ export function AttendanceSheet({ clubId, fecha, miembros, registrosIniciales, v
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                       {m.curso ?? "Sin curso"} · {m.matricula}
+                      {subclubId === null && m.id_subclub != null && nombreSubclub[m.id_subclub] ? ` · ${nombreSubclub[m.id_subclub]}` : ""}
                     </p>
                   </div>
                   <Switch

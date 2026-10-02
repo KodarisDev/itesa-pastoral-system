@@ -75,6 +75,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           rolNombre: rol?.nombre ?? "",
           permisos: sesion.permisos,
           clubIds: sesion.clubIds,
+          clubGeneralIds: sesion.clubGeneralIds,
+          subclubIds: sesion.subclubIds,
           clubPrincipalId: sesion.clubPrincipalId,
           idEstudiante: usuario.id_estudiante,
           primerInicioSesion: usuario.primer_inicio_sesion,

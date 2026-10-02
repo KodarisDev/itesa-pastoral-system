@@ -37,3 +37,32 @@ export async function requirePermisoEnClub(permiso: Permission, idClub: number) 
   }
   return session;
 }
+
+function esRolDelSistema(rolNombre: string) {
+  return rolNombre === "pastoral" || rolNombre === "admin";
+}
+
+/**
+ * Como requirePermisoEnClub, pero exige ser encargado GENERAL del club (no
+ * solo de uno de sus subclubes). Para gestionar subclubes, inscribir, etc.
+ */
+export async function requirePermisoComoEncargadoGeneral(permiso: Permission, idClub: number) {
+  const session = await requirePermiso(permiso);
+  if (!esRolDelSistema(session.user.rolNombre) && !session.user.clubGeneralIds.includes(idClub)) {
+    throw new Error("Solo el encargado general del club puede hacer esto.");
+  }
+  return session;
+}
+
+/**
+ * Para pasar lista de un subclub: basta con ser encargado de ese subclub, o
+ * encargado general de su club padre (o pastoral/admin). Consulta la DB para
+ * conocer el club padre, así no depende de datos viejos del JWT.
+ */
+export async function requirePermisoEnSubclub(permiso: Permission, idSubclub: number, idClubPadre: number) {
+  const session = await requirePermiso(permiso);
+  if (esRolDelSistema(session.user.rolNombre)) return session;
+  if (session.user.clubGeneralIds.includes(idClubPadre)) return session;
+  if (session.user.subclubIds.includes(idSubclub)) return session;
+  throw new Error("Solo puedes hacer esto en un subclub que diriges.");
+}
