@@ -7,7 +7,7 @@ import { Check, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/shared/SearchableSelect";
 import {
   createSubclub,
   updateSubclub,
@@ -164,18 +164,14 @@ export function SubclubesManager({ clubId, subclubes, miembros, encargadosSubclu
                 </div>
                 {usuariosDisponibles.length > 0 && (
                   <div className="mt-2 max-w-xs">
-                    <Select value="" onValueChange={(v) => ejecutar(() => addEncargadoSubclub(sc.id_subclub, Number(v)), "Encargado asignado.")}>
-                      <SelectTrigger aria-label="Agregar encargado">
-                        <SelectValue placeholder="Agregar encargado…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuariosDisponibles.map((u) => (
-                          <SelectItem key={u.id_usuario} value={String(u.id_usuario)}>
-                            {u.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={usuariosDisponibles.map((u) => ({ value: String(u.id_usuario), label: u.nombre }))}
+                      onChange={(v) => ejecutar(() => addEncargadoSubclub(sc.id_subclub, Number(v)), "Encargado asignado.")}
+                      placeholder="Agregar encargado…"
+                      searchPlaceholder="Buscar encargado…"
+                      emptyText="Ningún encargado coincide."
+                      disabled={isPending}
+                    />
                   </div>
                 )}
               </div>
@@ -205,21 +201,19 @@ export function SubclubesManager({ clubId, subclubes, miembros, encargadosSubclu
                 )}
                 {sinSubclub.length > 0 && (
                   <div className="mt-2 max-w-xs">
-                    <Select
-                      value=""
-                      onValueChange={(v) => ejecutar(() => setSubclubDeEstudiante(Number(v), sc.id_subclub, clubId), "Estudiante agregado al subclub.")}
-                    >
-                      <SelectTrigger aria-label="Agregar miembro">
-                        <SelectValue placeholder="Agregar miembro del club…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sinSubclub.map((m) => (
-                          <SelectItem key={m.id_estudiante} value={String(m.id_estudiante)}>
-                            {m.apellido}, {m.nombre} {m.curso ? `(${m.curso})` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={sinSubclub.map((m) => ({
+                        value: String(m.id_estudiante),
+                        label: `${m.apellido}, ${m.nombre}`,
+                        hint: m.curso ?? undefined,
+                        keywords: m.matricula,
+                      }))}
+                      onChange={(v) => ejecutar(() => setSubclubDeEstudiante(Number(v), sc.id_subclub, clubId), "Estudiante agregado al subclub.")}
+                      placeholder="Agregar miembro del club…"
+                      searchPlaceholder="Buscar por nombre o matrícula…"
+                      emptyText="Ningún estudiante coincide."
+                      disabled={isPending}
+                    />
                   </div>
                 )}
               </div>

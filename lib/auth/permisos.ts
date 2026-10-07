@@ -47,3 +47,8 @@ export async function resolverSesion(usuario: Usuario): Promise<SesionResuelta> 
 export function tienePermiso(permisos: Permission[] | undefined, permiso: Permission): boolean {
   return !!permisos?.includes(permiso);
 }
+
+/** Encargado que solo dirige subclubes (no es encargado general de ningún club): su panel gira en torno a su subclub. */
+export function esSoloEncargadoDeSubclub(user: { clubGeneralIds: number[]; subclubIds: number[] }): boolean {
+  return user.clubGeneralIds.length === 0 && user.subclubIds.length > 0;
+}

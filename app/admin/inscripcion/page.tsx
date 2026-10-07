@@ -1,6 +1,6 @@
 import { InscripcionManager } from "@/components/admin/InscripcionManager";
 import { getConteoMiembrosPorClub } from "@/lib/db/estudiantes";
-import { getEstudiantesCached, getClubesCached } from "@/lib/db/cached";
+import { getEstudiantesCached, getClubesCached, getSubclubesCached } from "@/lib/db/cached";
 import { requireVista } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminInscripcionPage() {
   await requireVista("estudiantes:inscribir");
 
-  const [estudiantes, clubes, miembrosPorClub] = await Promise.all([
+  const [estudiantes, clubes, subclubes, miembrosPorClub] = await Promise.all([
     getEstudiantesCached(),
     getClubesCached(),
+    getSubclubesCached(),
     getConteoMiembrosPorClub(),
   ]);
 
@@ -23,7 +24,7 @@ export default async function AdminInscripcionPage() {
         </p>
       </div>
 
-      <InscripcionManager estudiantes={estudiantes} clubes={clubes} miembrosPorClub={miembrosPorClub} />
+      <InscripcionManager estudiantes={estudiantes} clubes={clubes} subclubes={subclubes} miembrosPorClub={miembrosPorClub} />
     </div>
   );
 }

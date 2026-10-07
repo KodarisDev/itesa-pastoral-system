@@ -4,6 +4,8 @@ import type { RegistroAsistencia } from "@/lib/db/asistencia";
 
 export interface FiltroAsistencia {
   clubId?: number;
+  /** Si se indica, solo asistencia de esos subclubes (vista de un encargado de subclub). */
+  subclubIds?: number[];
   fechaDesde?: string;
   fechaHasta?: string;
 }
@@ -100,6 +102,10 @@ export async function getSesionesEnriquecidas(filtro: FiltroAsistencia = {}): Pr
   const subclubesMap = new Map(subclubes.map((s) => [s.id_subclub, s]));
 
   let filtradas = filas;
+  if (filtro.subclubIds) {
+    const permitidos = new Set(filtro.subclubIds);
+    filtradas = filtradas.filter((f) => f.id_subclub != null && permitidos.has(f.id_subclub));
+  }
   if (filtro.fechaDesde) filtradas = filtradas.filter((f) => f.fecha >= filtro.fechaDesde!);
   if (filtro.fechaHasta) filtradas = filtradas.filter((f) => f.fecha <= filtro.fechaHasta!);
 

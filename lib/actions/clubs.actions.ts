@@ -15,6 +15,7 @@ import {
   getClubesDeUsuario,
   contarMiembros,
 } from "@/lib/db/clubes";
+import { getSubclubById } from "@/lib/db/subclubes";
 import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { getUsuarioByEstudianteId } from "@/lib/db/usuarios";
 import { subirFotoClub, borrarFotoClub } from "@/lib/supabase/storage";
@@ -253,7 +254,16 @@ export async function removeMiembroDeClub(clubId: number, estudianteId: number):
   }
 }
 
-export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId: number): Promise<ActionResult> {
+/**
+ * Mueve a un estudiante de club (y opcionalmente a un subclub del club destino).
+ * `subclubDestinoId`: undefined/null = sin subclub. Si el club destino es el actual,
+ * solo cambia el subclub.
+ */
+export async function cambiarClubEstudiante(
+  estudianteId: number,
+  clubDestinoId: number,
+  subclubDestinoId?: number | null,
+): Promise<ActionResult> {
   try {
     const session = await requirePermiso("estudiantes:gestionar");
 
@@ -262,11 +272,20 @@ export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId:
 
     const estudiante = await getEstudianteById(estudianteId);
     if (!estudiante) return actionError("El estudiante no existe.");
-    if (estudiante.id_club === clubDestinoId) {
-      return actionError("El estudiante ya pertenece a ese club.");
+    const mismoClub = estudiante.id_club === clubDestinoId;
+    const subclubNuevo = subclubDestinoId ?? null;
+    if (mismoClub && subclubNuevo === (estudiante.id_subclub ?? null)) {
+      return actionError("El estudiante ya pertenece a ese club y subclub.");
     }
 
-    const usuarioEncargado = await getUsuarioByEstudianteId(estudianteId);
+    let nombreSubclub: string | null = null;
+    if (subclubNuevo !== null) {
+      const subclub = await getSubclubById(subclubNuevo);
+      if (!subclub || subclub.id_club !== clubDestinoId) return actionError("El subclub no pertenece al club seleccionado.");
+      nombreSubclub = subclub.nombre;
+    }
+
+    const usuarioEncargado = mismoClub ? null : await getUsuarioByEstudianteId(estudianteId);
     if (usuarioEncargado) {
       const encargos = await getClubesDeUsuario(usuarioEncargado.id_usuario);
       if (encargos.length > 0) {
@@ -274,18 +293,27 @@ export async function cambiarClubEstudiante(estudianteId: number, clubDestinoId:
       }
     }
 
-    const cupo = (clubDestino.capacidad ?? Infinity) - (await contarMiembros(clubDestinoId));
-    if (cupo <= 0) return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
+    if (!mismoClub) {
+      const cupo = (clubDestino.capacidad ?? Infinity) - (await contarMiembros(clubDestinoId));
+      if (cupo <= 0) return actionError(`El club "${clubDestino.nombre}" ya no tiene cupo disponible.`);
+    }
 
-    await actualizarEstudiante(estudianteId, { id_club: clubDestinoId, id_subclub: null });
+    await actualizarEstudiante(estudianteId, { id_club: clubDestinoId, id_subclub: subclubNuevo });
 
     await registrarBitacora({
       session,
       accion: "estudiante.cambiar_club",
       entidad: "estudiante",
       entidadId: estudianteId,
-      descripcion: `Cambió a ${estudiante.nombre} ${estudiante.apellido} al club "${clubDestino.nombre}".`,
-      metadata: { clubAnteriorId: estudiante.id_club, clubDestinoId },
+      descripcion: mismoClub
+        ? `Cambió a ${estudiante.nombre} ${estudiante.apellido} ${nombreSubclub ? `al subclub "${nombreSubclub}"` : "a sin subclub"} del club "${clubDestino.nombre}".`
+        : `Cambió a ${estudiante.nombre} ${estudiante.apellido} al club "${clubDestino.nombre}"${nombreSubclub ? ` (subclub "${nombreSubclub}")` : ""}.`,
+      metadata: {
+        clubAnteriorId: estudiante.id_club,
+        clubDestinoId,
+        subclubAnteriorId: estudiante.id_subclub ?? null,
+        subclubDestinoId: subclubNuevo,
+      },
     });
 
     revalidatePath("/admin/clubes");

@@ -6,15 +6,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InscribirEstudianteModal } from "@/components/admin/InscribirEstudianteModal";
-import type { Club, Estudiante } from "@/types";
+import type { Club, Estudiante, Subclub } from "@/types";
 
 interface InscripcionManagerProps {
   estudiantes: Estudiante[];
   clubes: Club[];
+  subclubes: Subclub[];
   miembrosPorClub: Map<number, number>;
 }
 
-export function InscripcionManager({ estudiantes, clubes, miembrosPorClub }: InscripcionManagerProps) {
+export function InscripcionManager({ estudiantes, clubes, subclubes, miembrosPorClub }: InscripcionManagerProps) {
   const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [preseleccion, setPreseleccion] = useState<number | null>(null);
@@ -94,6 +95,7 @@ export function InscripcionManager({ estudiantes, clubes, miembrosPorClub }: Ins
         onOpenChange={setModalOpen}
         estudiantes={estudiantes}
         clubes={clubes}
+        subclubes={subclubes}
         miembrosPorClub={miembrosPorClub}
         preselectedEstudianteId={preseleccion}
       />

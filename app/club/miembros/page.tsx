@@ -4,15 +4,17 @@ import { MembersList } from "@/components/club/MembersList";
 import { getClubById, getEstudiantesEncargadosDeClub } from "@/lib/db/clubes";
 import { getEstudiantesPorClub } from "@/lib/db/estudiantes";
 import { getSubclubesDeClub } from "@/lib/db/subclubes";
+import { esSoloEncargadoDeSubclub } from "@/lib/auth/permisos";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClubMiembrosPage() {
   const session = await auth();
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
-  if (!idClub) redirect("/login");
+  if (!session || !idClub) redirect("/login");
+  const soloSubclub = esSoloEncargadoDeSubclub(session.user);
 
-  const [club, miembros, estudiantesEncargadosIds, subclubes] = await Promise.all([
+  const [club, miembrosClub, estudiantesEncargadosIds, subclubes] = await Promise.all([
     getClubById(idClub),
     getEstudiantesPorClub(idClub),
     getEstudiantesEncargadosDeClub(idClub),
@@ -20,11 +22,17 @@ export default async function ClubMiembrosPage() {
   ]);
   if (!club) redirect("/login");
 
+  // Un encargado de subclub ve solo a los miembros de su subclub.
+  const miembros = soloSubclub ? miembrosClub.filter((m) => m.id_subclub != null && session.user.subclubIds.includes(m.id_subclub)) : miembrosClub;
+  const nombresSubclubes = subclubes.filter((s) => !soloSubclub || session.user.subclubIds.includes(s.id_subclub)).map((s) => s.nombre);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Miembros del club</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{club.nombre}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+          {soloSubclub ? "Miembros del subclub" : "Miembros del club"}
+        </h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{soloSubclub ? `${nombresSubclubes.join(", ")} · ${club.nombre}` : club.nombre}</p>
       </div>
       <MembersList
         miembros={miembros}

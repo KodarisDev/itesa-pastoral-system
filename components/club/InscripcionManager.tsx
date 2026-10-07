@@ -6,18 +6,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InscribirEstudianteModal } from "@/components/club/InscribirEstudianteModal";
-import type { Estudiante } from "@/types";
+import type { Estudiante, Subclub } from "@/types";
 
 interface InscripcionManagerProps {
   estudiantes: Estudiante[];
   clubNombre: string;
+  /** Modo encargado de subclub (ver InscribirEstudianteModal). */
+  subclubes?: Subclub[];
+  clubId?: number;
 }
 
-export function InscripcionManager({ estudiantes, clubNombre }: InscripcionManagerProps) {
+export function InscripcionManager({ estudiantes, clubNombre, subclubes, clubId }: InscripcionManagerProps) {
   const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  const sinClub = estudiantes.filter((e) => e.id_club == null);
+  const modoSubclub = !!subclubes && subclubes.length > 0;
+  // Subclub: miembros de este club que aún no tienen subclub. Club general: estudiantes sin club.
+  const sinClub = estudiantes.filter((e) => (modoSubclub ? e.id_club === clubId && e.id_subclub == null : e.id_club == null));
   const q = busqueda.trim().toLowerCase();
   const filtrados = q
     ? sinClub.filter((e) => `${e.nombre} ${e.apellido} ${e.matricula} ${e.curso ?? ""}`.toLowerCase().includes(q))
@@ -28,7 +33,10 @@ export function InscripcionManager({ estudiantes, clubNombre }: InscripcionManag
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
         <p className="text-sm text-gray-500 dark:text-gray-400">
           <span className="font-medium text-gray-800 dark:text-gray-200">{sinClub.length}</span> estudiante
-          {sinClub.length === 1 ? "" : "s"} sin club en todo el instituto
+          {sinClub.length === 1 ? "" : "s"}{" "}
+          {modoSubclub
+            ? `del club sin subclub, disponible${sinClub.length === 1 ? "" : "s"} para tu subclub`
+            : "sin club en todo el instituto"}
         </p>
         <Button onClick={() => setModalOpen(true)}>
           <UserPlus className="h-4 w-4" aria-hidden="true" />
@@ -68,7 +76,11 @@ export function InscripcionManager({ estudiantes, clubNombre }: InscripcionManag
             {filtrados.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} className="py-10 text-center text-sm text-gray-400 dark:text-gray-500">
-                  {sinClub.length === 0 ? "Todos los estudiantes tienen un club asignado." : "No se encontraron estudiantes."}
+                  {sinClub.length === 0
+                    ? modoSubclub
+                      ? "Todos los miembros del club ya tienen subclub."
+                      : "Todos los estudiantes tienen un club asignado."
+                    : "No se encontraron estudiantes."}
                 </TableCell>
               </TableRow>
             )}
@@ -76,7 +88,14 @@ export function InscripcionManager({ estudiantes, clubNombre }: InscripcionManag
         </Table>
       </div>
 
-      <InscribirEstudianteModal open={modalOpen} onOpenChange={setModalOpen} estudiantes={estudiantes} clubNombre={clubNombre} />
+      <InscribirEstudianteModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        estudiantes={estudiantes}
+        clubNombre={clubNombre}
+        subclubes={subclubes}
+        clubId={clubId}
+      />
     </div>
   );
 }

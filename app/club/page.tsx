@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { ClipboardCheck, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
+import { SubclubHome } from "@/components/club/SubclubHome";
+import { esSoloEncargadoDeSubclub } from "@/lib/auth/permisos";
 import { ClubHeaderCard } from "@/components/club/ClubHeaderCard";
 import { StatCard } from "@/components/admin/StatCard";
 import { getClubById, getEstudiantesEncargadosDeClub, getEncargadosDeClub } from "@/lib/db/clubes";
@@ -12,7 +14,8 @@ export const dynamic = "force-dynamic";
 export default async function ClubHomePage() {
   const session = await auth();
   const idClub = session?.user.clubPrincipalId ?? session?.user.clubIds[0];
-  if (!idClub) redirect("/login");
+  if (!session || !idClub) redirect("/login");
+  if (esSoloEncargadoDeSubclub(session.user)) return <SubclubHome user={session.user} />;
 
   const [club, miembros, filas, configuracion, estudiantesEncargadosIds, encargadosDelClub] = await Promise.all([
     getClubById(idClub),

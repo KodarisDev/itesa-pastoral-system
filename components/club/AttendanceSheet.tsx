@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Save, Clock, AlertTriangle, Search } from "lucide-react";
@@ -29,7 +29,17 @@ interface AttendanceSheetProps {
   ventana: VentanaAsistencia;
 }
 
-export function AttendanceSheet({ clubId, subclubId, grupos, grupo, nombreSubclub, fecha, miembros, registrosIniciales, ventana }: AttendanceSheetProps) {
+export function AttendanceSheet({
+  clubId,
+  subclubId,
+  grupos,
+  grupo,
+  nombreSubclub,
+  fecha,
+  miembros,
+  registrosIniciales,
+  ventana,
+}: AttendanceSheetProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -61,6 +71,29 @@ export function AttendanceSheet({ clubId, subclubId, grupos, grupo, nombreSubclu
       return true;
     });
   }, [miembros, query, curso, estado, presencia]);
+
+  // Lista general del club con subclubes: una sola tabla con una sección por subclub ("Sin subclub" primero).
+  const secciones = useMemo(() => {
+    if (subclubId !== null || !visibles.some((m) => m.id_subclub != null)) {
+      return [{ clave: "todos", titulo: null as string | null, miembros: visibles }];
+    }
+    const porSubclub = new Map<number | null, Estudiante[]>();
+    for (const m of visibles) {
+      const clave = m.id_subclub ?? null;
+      porSubclub.set(clave, [...(porSubclub.get(clave) ?? []), m]);
+    }
+    return Array.from(porSubclub.entries())
+      .sort(([a], [b]) => {
+        if (a === null) return -1;
+        if (b === null) return 1;
+        return (nombreSubclub[a] ?? "").localeCompare(nombreSubclub[b] ?? "");
+      })
+      .map(([clave, miembros]) => ({
+        clave: String(clave),
+        titulo: clave === null ? "Sin subclub" : (nombreSubclub[clave] ?? "Subclub"),
+        miembros,
+      }));
+  }, [visibles, subclubId, nombreSubclub]);
 
   function handleFechaChange(nuevaFecha: string) {
     router.push(`/club/asistencia?fecha=${nuevaFecha}&grupo=${grupo}`);
@@ -100,15 +133,16 @@ export function AttendanceSheet({ clubId, subclubId, grupos, grupo, nombreSubclu
               : "flex items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-400"
           }
         >
-          {ventana.abierta ? <Clock className="h-4 w-4 shrink-0" aria-hidden="true" /> : <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />}
           {ventana.abierta ? (
-            <span>
-              Puedes pasar lista hasta el {formatearFechaHoraPastoral(ventana.fin!)}.
-            </span>
+            <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+          )}
+          {ventana.abierta ? (
+            <span>Puedes pasar lista hasta el {formatearFechaHoraPastoral(ventana.fin!)}.</span>
           ) : (
             <span>
-              Fuera del horario de pastoral. Podrás pasar lista de nuevo desde el{" "}
-              {formatearFechaHoraPastoral(ventana.siguienteInicio!)}.
+              Fuera del horario de pastoral. Podrás pasar lista de nuevo desde el {formatearFechaHoraPastoral(ventana.siguienteInicio!)}.
             </span>
           )}
         </div>
@@ -146,7 +180,10 @@ export function AttendanceSheet({ clubId, subclubId, grupos, grupo, nombreSubclu
               Buscar estudiante
             </Label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                aria-hidden="true"
+              />
               <Input
                 id="filtro-estudiante"
                 value={query}
@@ -206,43 +243,54 @@ export function AttendanceSheet({ clubId, subclubId, grupos, grupo, nombreSubclu
         </div>
       ) : (
         <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
-          {visibles.map((m) => {
-            const presente = presencia[m.id_estudiante] ?? false;
-            return (
-              <div key={m.id_estudiante} className="px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {m.nombre} {m.apellido}
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {m.curso ?? "Sin curso"} · {m.matricula}
-                      {subclubId === null && m.id_subclub != null && nombreSubclub[m.id_subclub] ? ` · ${nombreSubclub[m.id_subclub]}` : ""}
-                    </p>
-                  </div>
-                  <Switch
-                    id={`presente-${m.id_estudiante}`}
-                    checked={presente}
-                    onCheckedChange={(v) => setPresencia((prev) => ({ ...prev, [m.id_estudiante]: v }))}
-                    label={presente ? "Presente" : "Ausente"}
-                    disabled={bloqueado}
-                  />
+          {secciones.map((seccion) => (
+            <Fragment key={seccion.clave}>
+              {seccion.titulo && (
+                <div className="flex items-center justify-between bg-gray-50 px-4 py-2 first:rounded-t-2xl dark:bg-neutral-800/60">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{seccion.titulo}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {seccion.miembros.filter((m) => presencia[m.id_estudiante] ?? false).length} / {seccion.miembros.length} presentes
+                  </span>
                 </div>
-                {!presente && (
-                  <div className="mt-2.5">
-                    <Textarea
-                      value={justificaciones[m.id_estudiante] ?? ""}
-                      onChange={(e) => setJustificaciones((prev) => ({ ...prev, [m.id_estudiante]: e.target.value }))}
-                      placeholder="Justificación de la ausencia (opcional)"
-                      rows={2}
-                      maxLength={240}
-                      className="min-h-0 text-sm"
-                    />
+              )}
+              {seccion.miembros.map((m) => {
+                const presente = presencia[m.id_estudiante] ?? false;
+                return (
+                  <div key={m.id_estudiante} className="px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {m.nombre} {m.apellido}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {m.curso ?? "Sin curso"} · {m.matricula}
+                        </p>
+                      </div>
+                      <Switch
+                        id={`presente-${m.id_estudiante}`}
+                        checked={presente}
+                        onCheckedChange={(v) => setPresencia((prev) => ({ ...prev, [m.id_estudiante]: v }))}
+                        label={presente ? "Presente" : "Ausente"}
+                        disabled={bloqueado}
+                      />
+                    </div>
+                    {!presente && (
+                      <div className="mt-2.5">
+                        <Textarea
+                          value={justificaciones[m.id_estudiante] ?? ""}
+                          onChange={(e) => setJustificaciones((prev) => ({ ...prev, [m.id_estudiante]: e.target.value }))}
+                          placeholder="Justificación de la ausencia (opcional)"
+                          rows={2}
+                          maxLength={240}
+                          className="min-h-0 text-sm"
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </Fragment>
+          ))}
         </div>
       )}
 

@@ -17,13 +17,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { inscribirEstudiante } from "@/lib/actions/inscripcion.actions";
-import type { Club, Estudiante } from "@/types";
+import type { Club, Estudiante, Subclub } from "@/types";
 
 interface InscribirEstudianteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   estudiantes: Estudiante[];
   clubes: Club[];
+  subclubes: Subclub[];
   miembrosPorClub: Map<number, number>;
   preselectedEstudianteId?: number | null;
 }
@@ -33,6 +34,7 @@ export function InscribirEstudianteModal({
   onOpenChange,
   estudiantes,
   clubes,
+  subclubes,
   miembrosPorClub,
   preselectedEstudianteId,
 }: InscribirEstudianteModalProps) {
@@ -41,6 +43,11 @@ export function InscribirEstudianteModal({
   const [busqueda, setBusqueda] = useState("");
   const [estudianteId, setEstudianteId] = useState<number | null>(null);
   const [clubId, setClubId] = useState("");
+  const [subclubId, setSubclubId] = useState("__ninguno__");
+  const subclubesDelClub = useMemo(
+    () => (clubId ? subclubes.filter((s) => s.id_club === Number(clubId)) : []),
+    [subclubes, clubId],
+  );
   const [error, setError] = useState<string | null>(null);
 
   const clubesMap = useMemo(() => new Map(clubes.map((c) => [c.id_club, c.nombre])), [clubes]);
@@ -51,6 +58,7 @@ export function InscribirEstudianteModal({
       setEstudianteId(preselectedEstudianteId ?? null);
       setBusqueda("");
       setClubId("");
+      setSubclubId("__ninguno__");
       setError(null);
     }
   }, [open, preselectedEstudianteId]);
@@ -74,7 +82,11 @@ export function InscribirEstudianteModal({
     if (!estudianteId || !clubId) return;
     setIsPending(true);
     setError(null);
-    const res = await inscribirEstudiante({ estudianteId, clubId: Number(clubId) });
+    const res = await inscribirEstudiante({
+      estudianteId,
+      clubId: Number(clubId),
+      subclubId: subclubId === "__ninguno__" ? null : Number(subclubId),
+    });
     setIsPending(false);
     if (!res.ok) {
       setError(res.error);
@@ -179,7 +191,13 @@ export function InscribirEstudianteModal({
 
           <div>
             <Label htmlFor="club-destino">Club</Label>
-            <Select value={clubId} onValueChange={setClubId} disabled={!estudianteSeleccionado || !!clubActualDelSeleccionado}>
+            <Select
+              value={clubId}
+              onValueChange={(v) => {
+                setClubId(v);
+                setSubclubId("__ninguno__");
+              }}
+              disabled={!estudianteSeleccionado || !!clubActualDelSeleccionado}>
               <SelectTrigger id="club-destino">
                 <SelectValue placeholder="Selecciona un club" />
               </SelectTrigger>
@@ -192,6 +210,25 @@ export function InscribirEstudianteModal({
               </SelectContent>
             </Select>
           </div>
+
+          {subclubesDelClub.length > 0 && (
+            <div>
+              <Label htmlFor="subclub-destino-inscripcion">Subclub (opcional)</Label>
+              <Select value={subclubId} onValueChange={setSubclubId}>
+                <SelectTrigger id="subclub-destino-inscripcion">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__ninguno__">Sin subclub</SelectItem>
+                  {subclubesDelClub.map((s) => (
+                    <SelectItem key={s.id_subclub} value={String(s.id_subclub)}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {error && (
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">

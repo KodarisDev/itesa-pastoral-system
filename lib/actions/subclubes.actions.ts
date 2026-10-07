@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { subclubSchema, type SubclubFormValues } from "@/lib/validations/subclub.schema";
 import { getClubById } from "@/lib/db/clubes";
-import { getEstudianteById } from "@/lib/db/estudiantes";
+import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { getUsuarioById } from "@/lib/db/usuarios";
 import { getRolById } from "@/lib/db/roles";
 import {
@@ -17,6 +17,7 @@ import {
   agregarEncargadoSubclub,
   quitarEncargadoSubclub,
 } from "@/lib/db/subclubes";
+import { requirePermisoEnSubclub } from "@/lib/auth/guards";
 import { registrarBitacora } from "@/lib/audit";
 import { actionOk, actionError, type ActionResult } from "./types";
 
@@ -45,7 +46,12 @@ function revalidarSubclubes() {
   revalidatePath("/admin/clubes");
   revalidatePath("/admin/asistencias");
   revalidateTag(CACHE_TAGS.subclubes);
+  revalidatePath("/club/inscripcion");
+  revalidatePath("/club");
+  revalidatePath("/admin/estudiantes");
+  revalidatePath("/admin/inscripcion");
   revalidateTag(CACHE_TAGS.estudiantes);
+  revalidateTag(CACHE_TAGS.clubes);
   revalidateTag(CACHE_TAGS.asistencia);
 }
 
@@ -220,5 +226,47 @@ export async function removeEncargadoSubclub(subclubId: number, usuarioId: numbe
     return actionOk(undefined);
   } catch (err) {
     return actionError(err instanceof Error ? err.message : "No se pudo quitar al encargado.");
+  }
+}
+
+/**
+ * Encargado de subclub (o general / pastoral / admin) agrega a un estudiante a un subclub.
+ * Solo estudiantes ya inscritos en el club padre y que aún no tengan subclub.
+ */
+export async function inscribirEnSubclub(estudianteId: number, subclubId: number): Promise<ActionResult> {
+  try {
+    const subclub = await getSubclubById(subclubId);
+    if (!subclub) return actionError("El subclub no existe.");
+    const session = await requirePermisoEnSubclub("estudiantes:inscribir", subclubId, subclub.id_club);
+
+    const club = await getClubById(subclub.id_club);
+    if (!club) return actionError("El club del subclub no existe.");
+
+    const estudiante = await getEstudianteById(estudianteId);
+    if (!estudiante || !estudiante.activo) return actionError("El estudiante no existe en el listado vigente.");
+    const nombre = `${estudiante.nombre} ${estudiante.apellido}`;
+
+    if (estudiante.id_club !== club.id_club) {
+      return actionError(`${nombre} no está inscrito en el club "${club.nombre}".`);
+    }
+    if (estudiante.id_subclub != null) {
+      return actionError(`${nombre} ya pertenece a un subclub.`);
+    }
+
+    await actualizarEstudiante(estudianteId, { id_subclub: subclubId });
+
+    await registrarBitacora({
+      session,
+      accion: "subclub.inscribir_miembro",
+      entidad: "estudiante",
+      entidadId: estudianteId,
+      descripcion: `Agregó a ${nombre} al subclub "${subclub.nombre}" del club "${club.nombre}".`,
+      metadata: { clubId: club.id_club, subclubId },
+    });
+
+    revalidarSubclubes();
+    return actionOk(undefined);
+  } catch (err) {
+    return actionError(err instanceof Error ? err.message : "No se pudo agregar al estudiante al subclub.");
   }
 }

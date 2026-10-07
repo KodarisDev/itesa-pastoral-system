@@ -3,19 +3,17 @@
 import { useState, type ReactNode } from "react";
 import { ClubsTable } from "@/components/admin/ClubsTable";
 import { ClubDetailModal } from "@/components/admin/ClubDetailModal";
-import type { Club, Encargado, EncargadoSubclub, Estudiante, Subclub, Usuario } from "@/types";
+import type { Club, Encargado, Estudiante, Usuario } from "@/types";
 
 interface ClubsManagerProps {
   clubes: Club[];
   usuarios: Usuario[];
   encargados: Encargado[];
   estudiantes: Estudiante[];
-  subclubes: Subclub[];
-  encargadosSubclub: EncargadoSubclub[];
   actions?: ReactNode;
 }
 
-export function ClubsManager({ clubes, usuarios, encargados, estudiantes, subclubes, encargadosSubclub, actions }: ClubsManagerProps) {
+export function ClubsManager({ clubes, usuarios, encargados, estudiantes, actions }: ClubsManagerProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u]));
@@ -80,9 +78,6 @@ export function ClubsManager({ clubes, usuarios, encargados, estudiantes, subclu
         encargados={encargadosDelClub}
         miembros={miembros}
         estudiantesEncargadosIds={club ? estudiantesEncargadosPorClub.get(club.id_club) : undefined}
-        subclubes={club ? subclubes.filter((s) => s.id_club === club.id_club) : []}
-        encargadosSubclub={encargadosSubclub}
-        usuariosEncargados={usuarios.filter((u) => u.activo).map((u) => ({ id_usuario: u.id_usuario, nombre: u.nombre }))}
         onClose={() => setSelectedId(null)}
       />
     </>

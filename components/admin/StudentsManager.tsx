@@ -3,16 +3,17 @@
 import { useState, type ReactNode } from "react";
 import { StudentsTable } from "@/components/admin/StudentsTable";
 import { StudentDetailModal } from "@/components/admin/StudentDetailModal";
-import type { Club, Estudiante } from "@/types";
+import type { Club, Estudiante, Subclub } from "@/types";
 
 interface StudentsManagerProps {
   estudiantes: Estudiante[];
   clubes: Club[];
+  subclubes: Subclub[];
   initialMatricula?: string;
   actions?: ReactNode;
 }
 
-export function StudentsManager({ estudiantes, clubes, initialMatricula, actions }: StudentsManagerProps) {
+export function StudentsManager({ estudiantes, clubes, subclubes, initialMatricula, actions }: StudentsManagerProps) {
   const initial = initialMatricula ? (estudiantes.find((e) => e.matricula === initialMatricula) ?? null) : null;
   const [selectedId, setSelectedId] = useState<number | null>(initial?.id_estudiante ?? null);
 
@@ -21,7 +22,7 @@ export function StudentsManager({ estudiantes, clubes, initialMatricula, actions
 
   return (
     <>
-      <StudentsTable estudiantes={estudiantes} clubes={clubes} onSelect={(e) => setSelectedId(e.id_estudiante)} actions={actions} />
+      <StudentsTable estudiantes={estudiantes} clubes={clubes} subclubes={subclubes} onSelect={(e) => setSelectedId(e.id_estudiante)} actions={actions} />
       <StudentDetailModal estudiante={estudiante} clubActualNombre={clubNombre} onClose={() => setSelectedId(null)} />
     </>
   );

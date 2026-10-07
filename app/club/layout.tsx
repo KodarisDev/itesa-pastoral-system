@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LayoutDashboard, ClipboardCheck, Users, History, UserPlus, UserX, Network } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type DashboardNavItem } from "@/components/shared/DashboardShell";
+import { esSoloEncargadoDeSubclub } from "@/lib/auth/permisos";
 import { SignOutButton } from "@/components/shared/SignOutButton";
 
 export const metadata: Metadata = {
@@ -48,13 +49,18 @@ export default async function ClubLayout({ children }: { children: React.ReactNo
   }
 
   // Los encargados de subclub solo pasan lista y consultan: sin Inscripción ni gestión de Subclubes.
-  const esEncargadoGeneral = session.user.clubGeneralIds.length > 0;
-  const navItems = esEncargadoGeneral
-    ? NAV_ITEMS
-    : NAV_ITEMS.filter((item) => item.href !== "/club/inscripcion" && item.href !== "/club/subclubes");
+  const soloSubclub = esSoloEncargadoDeSubclub(session.user);
+  const navItems = (soloSubclub ? NAV_ITEMS.filter((item) => item.href !== "/club/subclubes") : NAV_ITEMS).map((item) =>
+    soloSubclub && item.href === "/club" ? { ...item, label: "Mi subclub" } : item,
+  );
 
   return (
-    <DashboardShell title="Mi club" subtitle="Panel del encargado" navItems={navItems} userName={session.user.name ?? "Encargado"}>
+    <DashboardShell
+      title={soloSubclub ? "Mi subclub" : "Mi club"}
+      subtitle={soloSubclub ? "Panel del encargado de subclub" : "Panel del encargado"}
+      navItems={navItems}
+      userName={session.user.name ?? "Encargado"}
+    >
       {children}
     </DashboardShell>
   );

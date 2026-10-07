@@ -15,28 +15,48 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { inscribirEstudianteEnMiClub } from "@/lib/actions/inscripcion.actions";
-import type { Estudiante } from "@/types";
+import { inscribirEnSubclub } from "@/lib/actions/subclubes.actions";
+import type { Estudiante, Subclub } from "@/types";
 
 interface InscribirEstudianteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   estudiantes: Estudiante[];
   clubNombre: string;
+  /** Modo encargado de subclub: se agrega a estos subclubes (y al club padre si el estudiante no tiene club). */
+  subclubes?: Subclub[];
+  clubId?: number;
 }
 
-export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, clubNombre }: InscribirEstudianteModalProps) {
+export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, clubNombre, subclubes, clubId }: InscribirEstudianteModalProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [estudianteId, setEstudianteId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [subclubId, setSubclubId] = useState("");
+
+  const modoSubclub = !!subclubes && subclubes.length > 0;
+  const subclubDestino = modoSubclub
+    ? (subclubes.find((s) => String(s.id_subclub) === subclubId) ?? (subclubes.length === 1 ? subclubes[0] : null))
+    : null;
+  // En modo subclub solo se puede agregar a quien ya está en este club y no tiene subclub.
+  const esElegible = (e: Estudiante) =>
+    modoSubclub ? e.id_club === clubId && e.id_subclub == null : e.id_club == null;
+  const motivoNoElegible = (e: Estudiante) => {
+    if (!modoSubclub) return "Ya está en un club";
+    if (e.id_club === clubId) return "Ya está en un subclub";
+    return e.id_club == null ? "No está inscrito en el club" : "Está en otro club";
+  };
 
   useEffect(() => {
     if (open) {
       setEstudianteId(null);
       setBusqueda("");
       setError(null);
+      setSubclubId("");
     }
   }, [open]);
 
@@ -57,7 +77,10 @@ export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, club
     if (!estudianteId) return;
     setIsPending(true);
     setError(null);
-    const res = await inscribirEstudianteEnMiClub(estudianteId);
+    const res =
+      modoSubclub && subclubDestino
+        ? await inscribirEnSubclub(estudianteId, subclubDestino.id_subclub)
+        : await inscribirEstudianteEnMiClub(estudianteId);
     setIsPending(false);
     if (!res.ok) {
       setError(res.error);
@@ -74,7 +97,9 @@ export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, club
         <DialogHeader>
           <DialogTitle>Inscribir estudiante</DialogTitle>
           <DialogDescription>
-            Busca a un estudiante sin club y agrégalo a {clubNombre}.
+            {modoSubclub
+              ? `Busca a un miembro de ${clubNombre} que aún no tenga subclub y agrégalo a ${subclubDestino?.nombre ?? "tu subclub"}.`
+              : `Busca a un estudiante sin club y agrégalo a ${clubNombre}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -102,7 +127,7 @@ export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, club
                     </p>
                   ) : (
                     resultados.map((e) => {
-                      const disponible = e.id_club == null;
+                      const disponible = esElegible(e);
                       return (
                         <button
                           key={e.id_estudiante}
@@ -120,7 +145,7 @@ export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, club
                             </span>
                           </span>
                           {!disponible && (
-                            <span className="shrink-0 text-xs font-medium text-amber-600 dark:text-amber-400">Ya está en un club</span>
+                            <span className="shrink-0 text-xs font-medium text-amber-600 dark:text-amber-400">{motivoNoElegible(e)}</span>
                           )}
                         </button>
                       );
@@ -153,7 +178,29 @@ export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, club
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Se inscribirá en {clubNombre}.</p>
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {modoSubclub
+                  ? `Se agregará a ${subclubDestino?.nombre ?? "tu subclub"}.`
+                  : `Se inscribirá en ${clubNombre}.`}
+              </p>
+            </div>
+          )}
+
+          {modoSubclub && subclubes.length > 1 && (
+            <div>
+              <Label htmlFor="subclub-destino">Subclub</Label>
+              <Select value={subclubId} onValueChange={setSubclubId}>
+                <SelectTrigger id="subclub-destino">
+                  <SelectValue placeholder="Selecciona un subclub" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subclubes.map((s) => (
+                    <SelectItem key={s.id_subclub} value={String(s.id_subclub)}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -168,7 +215,7 @@ export function InscribirEstudianteModal({ open, onOpenChange, estudiantes, club
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleConfirmar} disabled={isPending || !estudianteSeleccionado}>
+          <Button onClick={handleConfirmar} disabled={isPending || !estudianteSeleccionado || (modoSubclub && !subclubDestino)}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             Inscribir
           </Button>

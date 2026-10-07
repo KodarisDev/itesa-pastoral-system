@@ -25,14 +25,12 @@ export default async function ClubAsistenciaPage({ searchParams }: { searchParam
   ]);
   if (!club) redirect("/login");
 
-  // Encargado general: lista de todo el club o de cualquier subclub. Encargado
-  // de subclub: solo los subclubes que dirige (el club completo lo ve en Historial).
+  // Encargado general: una sola lista con todo el club (separada por subclub dentro de la
+  // misma tabla). Encargado de subclub: solo los subclubes que dirige; el club completo
+  // se refleja en el Historial del encargado general.
   const esGeneral = session.user.clubGeneralIds.includes(idClub);
   const grupos = esGeneral
-    ? [
-        { value: "club", label: subclubes.length > 0 ? "Todo el club" : club.nombre },
-        ...subclubes.map((s) => ({ value: String(s.id_subclub), label: s.nombre })),
-      ]
+    ? [{ value: "club", label: club.nombre }]
     : subclubes
         .filter((s) => session.user.subclubIds.includes(s.id_subclub))
         .map((s) => ({ value: String(s.id_subclub), label: s.nombre }));

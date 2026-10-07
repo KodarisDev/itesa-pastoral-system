@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentRowActionsMenu } from "@/components/admin/StudentRowActionsMenu";
-import type { Club, Estudiante } from "@/types";
+import type { Club, Estudiante, Subclub } from "@/types";
 
 interface StudentsTableProps {
   estudiantes: Estudiante[];
   clubes: Club[];
+  subclubes: Subclub[];
   onSelect: (estudiante: Estudiante) => void;
   actions?: ReactNode;
 }
@@ -24,11 +25,12 @@ function compararPorApellido(a: Estudiante, b: Estudiante) {
   return a.apellido.localeCompare(b.apellido, "es") || a.nombre.localeCompare(b.nombre, "es");
 }
 
-export function StudentsTable({ estudiantes, clubes, onSelect, actions }: StudentsTableProps) {
+export function StudentsTable({ estudiantes, clubes, subclubes, onSelect, actions }: StudentsTableProps) {
   const [busqueda, setBusqueda] = useState("");
   const [clubFiltro, setClubFiltro] = useState("todos");
   const [cursoFiltro, setCursoFiltro] = useState("todos");
 
+  const subclubesMap = useMemo(() => new Map(subclubes.map((s) => [s.id_subclub, s.nombre])), [subclubes]);
   const clubesMap = useMemo(() => new Map(clubes.map((c) => [c.id_club, c.nombre])), [clubes]);
   const clubesOrdenados = useMemo(() => [...clubes].sort((a, b) => a.nombre.localeCompare(b.nombre)), [clubes]);
 
@@ -174,14 +176,23 @@ export function StudentsTable({ estudiantes, clubes, onSelect, actions }: Studen
                     >
                       {e.apellido}, {e.nombre}
                     </button>
-                    <StudentRowActionsMenu estudiante={e} clubActualId={e.id_club} clubActualNombre={clubNombre} clubes={clubes} />
+                    <StudentRowActionsMenu
+                      estudiante={e}
+                      clubActualId={e.id_club}
+                      clubActualNombre={clubNombre}
+                      clubes={clubes}
+                      subclubes={subclubes}
+                    />
                   </div>
                   <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                     {e.curso ?? "Sin curso"} · {e.matricula}
                   </p>
                   <div className="mt-2">
                     {clubNombre ? (
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{clubNombre}</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {clubNombre}
+                        {e.id_subclub != null && subclubesMap.get(e.id_subclub) ? ` · ${subclubesMap.get(e.id_subclub)}` : ""}
+                      </span>
                     ) : (
                       <Badge variant="warning">Sin club</Badge>
                     )}
@@ -229,13 +240,22 @@ export function StudentsTable({ estudiantes, clubes, onSelect, actions }: Studen
                       </TableCell>
                       <TableCell>
                         {clubNombre ? (
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{clubNombre}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {clubNombre}
+                        {e.id_subclub != null && subclubesMap.get(e.id_subclub) ? ` · ${subclubesMap.get(e.id_subclub)}` : ""}
+                      </span>
                         ) : (
                           <Badge variant="warning">Sin club</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <StudentRowActionsMenu estudiante={e} clubActualId={e.id_club} clubActualNombre={clubNombre} clubes={clubes} />
+                        <StudentRowActionsMenu
+                      estudiante={e}
+                      clubActualId={e.id_club}
+                      clubActualNombre={clubNombre}
+                      clubes={clubes}
+                      subclubes={subclubes}
+                    />
                       </TableCell>
                     </TableRow>
                   );

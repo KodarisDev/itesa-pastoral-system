@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { inscripcionSchema, type InscripcionFormValues } from "@/lib/validations/inscripcion.schema";
 import { getClubById, contarMiembros } from "@/lib/db/clubes";
+import { getSubclubById } from "@/lib/db/subclubes";
 import { getEstudianteById, actualizarEstudiante } from "@/lib/db/estudiantes";
 import { CACHE_TAGS } from "@/lib/db/cached";
 import { requirePermiso, requirePermisoComoEncargadoGeneral } from "@/lib/auth/guards";
@@ -74,14 +75,22 @@ export async function inscribirEstudiante(values: InscripcionFormValues): Promis
     const cupo = (club.capacidad ?? Infinity) - (await contarMiembros(parsed.data.clubId));
     if (cupo <= 0) return actionError(`El club "${club.nombre}" ya no tiene cupo disponible.`);
 
-    await actualizarEstudiante(parsed.data.estudianteId, { id_club: parsed.data.clubId });
+    let subclubNombre: string | null = null;
+    if (parsed.data.subclubId) {
+      const subclub = await getSubclubById(parsed.data.subclubId);
+      if (!subclub || subclub.id_club !== parsed.data.clubId) return actionError("El subclub no pertenece al club seleccionado.");
+      subclubNombre = subclub.nombre;
+    }
+
+    await actualizarEstudiante(parsed.data.estudianteId, { id_club: parsed.data.clubId, id_subclub: parsed.data.subclubId ?? null });
 
     await registrarBitacora({
       session,
       accion: "estudiante.inscribir",
       entidad: "estudiante",
       entidadId: parsed.data.estudianteId,
-      descripcion: `Inscribió a ${estudiante.nombre} ${estudiante.apellido} en el club "${club.nombre}".`,
+      descripcion: `Inscribió a ${estudiante.nombre} ${estudiante.apellido} en el club "${club.nombre}"${subclubNombre ? ` (subclub "${subclubNombre}")` : ""}.`,
+      metadata: { clubId: club.id_club, subclubId: parsed.data.subclubId ?? null },
     });
 
     revalidatePath("/admin/inscripcion");

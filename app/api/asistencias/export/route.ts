@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { tienePermiso } from "@/lib/auth/permisos";
+import { tienePermiso, esSoloEncargadoDeSubclub } from "@/lib/auth/permisos";
+import { getSubclubById } from "@/lib/db/subclubes";
 import { getClubById, getClubes } from "@/lib/db/clubes";
 import { getSesionesEnriquecidas, type FiltroAsistencia } from "@/lib/reportes/asistencia";
 import { generarExcelAsistencia } from "@/lib/reportes/asistencia-excel";
@@ -52,6 +53,13 @@ export async function GET(req: NextRequest) {
     clubesParaExportar = [clubNombre];
     descripcion.push(`Club: ${clubNombre}`);
     clubNombreParaArchivo = slug(clubNombre);
+    // Un encargado de subclub solo exporta la asistencia de sus subclubes, no la del club completo.
+    if (esSoloEncargadoDeSubclub(session.user)) {
+      filtro.subclubIds = session.user.subclubIds;
+      const nombres = (await Promise.all(session.user.subclubIds.map((id) => getSubclubById(id)))).map((s) => s?.nombre ?? "subclub");
+      descripcion.push(`Subclub: ${nombres.join(", ")}`);
+      clubNombreParaArchivo = slug(`${clubNombre}-${nombres.join("-")}`);
+    }
   } else {
     // Roles "del sistema" (pastoral, admin): no están ligados a un club, pueden filtrar por cualquiera o ver todos.
     const clubId = params.get("clubId");
