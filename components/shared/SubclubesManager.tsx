@@ -7,6 +7,16 @@ import { Check, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SearchableSelect } from "@/components/shared/SearchableSelect";
 import {
   createSubclub,
@@ -35,6 +45,7 @@ export function SubclubesManager({ clubId, subclubes, miembros, encargadosSubclu
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [nombreEditado, setNombreEditado] = useState("");
+  const [subclubAEliminar, setSubclubAEliminar] = useState<Subclub | null>(null);
 
   const usuariosMap = new Map(usuarios.map((u) => [u.id_usuario, u.nombre]));
   const sinSubclub = miembros.filter((m) => m.id_subclub == null);
@@ -130,11 +141,7 @@ export function SubclubesManager({ clubId, subclubes, miembros, encargadosSubclu
                         size="sm"
                         variant="ghost"
                         disabled={isPending}
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar el subclub "${sc.nombre}"? Sus miembros seguirán en el club, sin subclub.`)) {
-                            ejecutar(() => deleteSubclub(sc.id_subclub), "Subclub eliminado.");
-                          }
-                        }}
+                        onClick={() => setSubclubAEliminar(sc)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
                         <span className="sr-only">Eliminar {sc.nombre}</span>
@@ -221,6 +228,32 @@ export function SubclubesManager({ clubId, subclubes, miembros, encargadosSubclu
           );
         })
       )}
+
+      <AlertDialog open={subclubAEliminar !== null} onOpenChange={(v) => !v && setSubclubAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar &quot;{subclubAEliminar?.nombre}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sus miembros seguirán en el club, pero sin subclub, y sus encargados dejarán de estar asignados a él. Esta acción no
+              se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPending}
+              onClick={() => {
+                if (!subclubAEliminar) return;
+                const { id_subclub } = subclubAEliminar;
+                setSubclubAEliminar(null);
+                ejecutar(() => deleteSubclub(id_subclub), "Subclub eliminado.");
+              }}
+            >
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
